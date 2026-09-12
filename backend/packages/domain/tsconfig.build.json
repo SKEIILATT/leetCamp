@@ -1,0 +1,12 @@
+{
+  // Separate from tsconfig.json because `typecheck` and `build` want different
+  // things: typecheck must see the specs (they are source too), the emitted
+  // dist/ must not contain them.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"]
+}

@@ -1,0 +1,211 @@
+# CI — the same quality gate as `health.sh`, run in a clean environment.
+#
+# It exists because `health.sh` only protects whoever remembers to run it. This
+# makes it unavoidable on every push and every pull request.
+#
+# Three jobs:
+#   quality      → the gate broken into separate steps, so the Actions UI names
+#                  exactly which one failed. The ORDER MIRRORS health.sh — see
+#                  the note above the steps.
+#   health-gate  → runs `bash health.sh` verbatim. Its job is to catch the
+#                  SCRIPT ITSELF breaking: without it, health.sh could stop
+#                  working and nobody would find out until someone ran it by
+#                  hand.
+#   e2e          → browser suite, if the project has one.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+# A new push on the same branch cancels the previous run: nobody needs the
+# result of a commit that has already been superseded.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # CI runs the MINIMUM supported version on purpose. If the repo stops working
+  # there, the published contract (`engines.node`) is broken — even if every
+  # developer's machine happens to run something newer.
+  NODE_VERSION: '22.x'
+
+jobs:
+  quality:
+    name: typecheck · build · tests · lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # PLACEHOLDERS. CI verifies that the bundle compiles and that the env
+      # schema is satisfied, NOT that credentials are valid — it never connects
+      # to anything. These are public by definition (a client prefix means baked
+      # into the bundle), so they are not secrets.
+      #
+      # Add a variable to the schema and this job fails until it is declared
+      # here, which is exactly the intended behaviour.
+      VITE_AUTH_CLIENT_ID: 'ci-placeholder-client-id'
+      VITE_AUTH_ISSUER: 'https://placeholder.example.com'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm/action-setup reads the version from `packageManager` in the root
+      # package.json. It goes BEFORE setup-node because `cache: 'pnpm'` needs the
+      # binary to already exist in order to locate the store.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      # `--frozen-lockfile` requires the lockfile to be in sync with the
+      # manifests: a dependency added without updating the lock fails here.
+      #
+      # ⚠ THE GREP IS NOT DECORATIVE. pnpm blocks postinstall scripts that are
+      # not in `allowBuilds` (pnpm-workspace.yaml) and reports it as a notice
+      # nobody reads. If `unrs-resolver` is left uncompiled,
+      # eslint-plugin-boundaries stops classifying imports and the lint passes
+      # green while enforcing nothing. That silent failure is worse than having
+      # no lint, so here it becomes an error.
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log
+          if grep -qi 'ignored build scripts' /tmp/install.log; then
+            echo "::error::pnpm ignored build scripts. Check 'allowBuilds' in pnpm-workspace.yaml."
+            grep -i -A5 'ignored build scripts' /tmp/install.log
+            exit 1
+          fi
+
+      # ⚠⚠ THE NEGATIVE TEST. THE MOST IMPORTANT STEP IN THIS FILE. ⚠⚠
+      #
+      # It checks that the lint FAILS on a real violation, not merely that the
+      # command exits 0. Without it, a broken native resolver on the runner would
+      # report "lint OK" over a lint that verifies absolutely nothing — and
+      # nothing in the output would say so.
+      #
+      # The second grep matters as much as the first: a lint that fails for some
+      # OTHER reason (a syntax error in the probe, a missing plugin) would
+      # otherwise be read as proof that boundaries works. The test only passes
+      # when the failure cites `boundaries/dependencies` by name.
+      - name: 'Guard: the hexagonal boundary is actually enforced'
+        run: |
+          set -euo pipefail
+          PROBE='packages/domain/src/__ci_boundary_probe.ts'
+          cleanup() { rm -f "$PROBE"; }
+          trap cleanup EXIT
+
+          # `zod` is forbidden in the core — validation belongs at the boundary.
+          printf "import 'zod';\nexport const __ciBoundaryProbe = 1;\n" > "$PROBE"
+
+          if pnpm exec eslint --max-warnings 0 "$PROBE" > /tmp/probe.log 2>&1; then
+            echo "::error::The lint PASSED on a deliberate boundary violation."
+            echo "::error::eslint-plugin-boundaries is not classifying imports — most likely"
+            echo "::error::the native unrs-resolver binary (see pnpm-workspace.yaml)."
+            exit 1
+          fi
+
+          if ! grep -q 'boundaries/dependencies' /tmp/probe.log; then
+            echo "::error::The lint failed, but NOT because of boundaries/dependencies."
+            echo "::error::The negative test proves nothing. Output follows:"
+            cat /tmp/probe.log
+            exit 1
+          fi
+          echo "OK: boundaries/dependencies rejected the illegal import."
+
+      # ⚠ THE ORDER OF THE NEXT FOUR STEPS IS NOT ARBITRARY.
+      # typecheck → build → tests → lint is EXACTLY the order of health.sh steps
+      # 4 to 7. When the two gates disagree, the same breakage stops at a
+      # different point locally and in CI: whoever ran `bash health.sh` sees a
+      # build failure, and CI reports it as a lint failure. Diagnosing two
+      # symptoms for one cause is wasted time.
+      #
+      # Some fail-fast is given up by this ordering — lint is cheaper than build
+      # and used to cut first — and it is given up knowingly: reproducibility over
+      # speed. If you reorder one gate, reorder the other.
+      - name: Typecheck (every workspace)
+        run: pnpm typecheck
+
+      - name: Build (with tsc)
+        run: pnpm build
+
+      # After the build on purpose: there is no point interrogating the behaviour
+      # of a tree that is not known to compile, and `db:generate` (which
+      # typecheck and build already ran) has put the ORM client in place.
+      #
+      # No database and no .env here, and none needed: the unit tests are
+      # hermetic. If a test ever needs a database, it is an integration test and
+      # belongs in a separate job with a service container.
+      - name: Unit tests
+        run: pnpm test
+
+      # `pnpm lint` (root), NOT `pnpm -r lint`: the single tree-wide invocation
+      # is the only one that lets boundaries classify cross-package imports.
+      - name: Lint
+        run: pnpm lint
+
+  health-gate:
+    name: health.sh (the gate a reviewer runs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+
+    env:
+      VITE_AUTH_CLIENT_ID: 'ci-placeholder-client-id'
+      VITE_AUTH_ISSUER: 'https://placeholder.example.com'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # NO_COLOR keeps the Actions log readable (no ANSI escapes).
+      - name: bash health.sh
+        env:
+          NO_COLOR: '1'
+        run: bash health.sh
+
+  # ── e2e ─────────────────────────────────────────────────────────────────────
+  # SKELETON. Enable it once the project has a browser suite, and delete the job
+  # if it never will — a permanently skipped job trains people to ignore the
+  # checks list.
+  #
+  # It is a SEPARATE job, not a step in `quality`, for two reasons: it needs
+  # browser binaries that want their own cache keyed on the runner's version,
+  # and a slow browser suite must not delay the fast feedback of typecheck and
+  # lint.
+  #
+  # ⚠ IF YOU ADD A SUITE THAT TALKS TO REAL SERVICES, DO NOT RUN IT HERE. Gate it
+  # behind an environment variable so that even a bare `playwright test` cannot
+  # launch it by accident, and run it by hand. CI has no reason to touch real
+  # data and many reasons not to.
+  e2e:
+    name: E2E (skeleton — enable when a suite exists)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+    if: false
+
+    steps:
+      - name: Placeholder
+        run: |
+          echo "No e2e suite yet."
+          echo "Remove the 'if: false' above and add the steps when there is one."

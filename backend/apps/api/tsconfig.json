@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    // Unlike packages/domain and packages/application (which declare
+    // `types: []` so they cannot touch the runtime), THIS layer is
+    // infrastructure: `process`, signals and the HTTP server live here.
+    "types": ["node"],
+    // Redundant with tsconfig.base.json on purpose, same as the other
+    // workspaces: it keeps the package's contract self-documented.
+    "strict": true,
+    "noUncheckedIndexedAccess": true
+  },
+  // `src/generated/**` is deliberately NOT excluded: the ORM client's .d.ts has
+  // to be visible to tsc. It IS excluded from linting in eslint.config.js —
+  // asking a code generator to satisfy this project's conventions is a fight
+  // you lose on every regeneration.
+  "include": ["src/**/*.ts"]
+}

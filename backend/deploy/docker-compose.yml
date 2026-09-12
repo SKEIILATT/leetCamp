@@ -1,0 +1,214 @@
+# docker-compose.yml — the full deployment of leetcamp.
+#
+#     Internet ──► caddy (80/443, automatic TLS)
+#                    ├── /api/*, /health*  ──► api:5090
+#                    └── /*                ──► web:80
+#
+# One domain for both, on purpose: it removes CORS entirely and leaves the
+# ground ready for first-party session cookies. See deploy/Caddyfile.
+#
+# ── HOW IT IS USED ──────────────────────────────────────────────────────────
+# All configuration lives in ONE file, `deploy/.env` (template in
+# `deploy/.env.example`). It is passed with `--env-file` because it plays two
+# roles at once: it feeds this file's `${...}` interpolation AND it is the
+# `env_file` of the `api` service.
+#
+#   Local verification (HTTP, no TLS, images built on this machine):
+#     cp deploy/.env.example deploy/.env && $EDITOR deploy/.env
+#     docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build -d
+#     → http://localhost
+#
+#   Server (images already published to a registry):
+#     docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull
+#     docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d
+#
+# Full runbook, rollback included: docs/deployment.md
+#
+# ⚠⚠ EVERY RELATIVE PATH BELOW IS RESOLVED FROM `deploy/`, NOT FROM THE REPO
+# ROOT. Compose resolves them against the COMPOSE FILE'S directory, and this
+# file lives in `deploy/`. That is why the build contexts read `..` and the
+# Caddyfile mount reads `./Caddyfile`.
+#
+# This trips people up in both directions. Writing `context: .` here would set
+# the build context to `deploy/` — pnpm would not find the workspace and the
+# build would fail with ERR_PNPM_WORKSPACE_PKG_NOT_FOUND, which reads like a
+# dependency problem and is not. Conversely, if you ever MOVE this file to the
+# repository root, every `..` here becomes wrong.
+#
+# ⚠⚠ SINGLE-INSTANCE WARNING — READ BEFORE SCALING ⚠⚠
+# The `api` service HOSTS the in-process cron scheduler. It has no distributed
+# coordination: no advisory locks, no leader table, nothing preventing two
+# processes from waking at the same moment.
+#
+# Concretely: `docker compose up --scale api=2` does NOT double capacity, it
+# doubles EVERY RUN of every job. On most domains that is data corruption, not a
+# performance problem, and it does not surface until somebody reads a number
+# that does not add up.
+#
+# `deploy.replicas: 1` below DOCUMENTS this but does not enforce it (Compose
+# ignores the `deploy` key outside Swarm, and an explicit `--scale` wins anyway).
+# What actually enforces it is this note plus `SCHEDULER_ENABLED`, which may be
+# `true` on ONE instance only. If the API ever needs to scale horizontally, the
+# correct move is to split the scheduler into its own single-replica service and
+# leave the HTTP servers without it — not to spread luck across replicas.
+
+name: leetcamp
+
+services:
+  # ── proxy ───────────────────────────────────────────────────────────────────
+  # ⚠ THE ONLY SERVICE WITH PUBLISHED PORTS. web and api are unreachable from
+  # outside the internal network — not even from the host, because they have no
+  # `ports:` key. That is what guarantees nobody can bypass the proxy and talk to
+  # the API directly. Adding `ports:` to `api` "just for debugging" removes that
+  # guarantee permanently.
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: leetcamp-caddy
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      # 443/udp is HTTP/3 (QUIC). Caddy only enables it once it has a
+      # certificate; publishing it costs nothing and NOT publishing it disables
+      # HTTP/3 silently.
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      # `:80` = plain HTTP, for local verification with no domain and no TLS.
+      # On the server this is the real domain and Caddy obtains the certificate
+      # on its own.
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      # `./Caddyfile` — relative to deploy/, where this file lives.
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # ⚠⚠ THESE TWO VOLUMES ARE THE CERTIFICATES. Deleting them forces
+      # re-issuance, and Let's Encrypt rate-limits certificates per domain per
+      # week: a careless `docker compose down -v` can leave the site without
+      # HTTPS for days. `caddy_data` holds certificates and ACME account keys;
+      # `caddy_config` holds autosaved configuration state.
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      # Probes through to the web upstream, so a green proxy means the proxy is
+      # listening AND routing.
+      test: ['CMD', 'wget', '--spider', '-q', 'http://127.0.0.1:80/nginx-health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── frontend ────────────────────────────────────────────────────────────────
+  # nginx serving dist/. No Node runtime here, and no runtime environment
+  # variables at all — the VITE_* values are baked into the JavaScript at image
+  # build time. Changing them requires REBUILDING THE IMAGE, not restarting the
+  # container.
+  web:
+    # The default is the tag `up --build` gives a locally built image. On the
+    # server, `deploy/.env` points this at the registry reference and
+    # `docker compose pull` fetches it instead of building anything.
+    image: ${WEB_IMAGE:-leetcamp-web:local}
+    container_name: leetcamp-web
+    restart: unless-stopped
+    # `build` only applies with `up --build` / `docker compose build` (local
+    # verification). On the server the images come from the registry.
+    build:
+      # ⚠ `..` IS THE REPOSITORY ROOT, not apps/web — see the header note on path
+      # resolution. pnpm workspace; the root lockfile governs. See .dockerignore.
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Baked into the bundle. PUBLIC by definition, so passing them as build
+        # args exposes nothing new. A server secret here would be written into
+        # the layer history — never.
+        #
+        # The `:?` form fails the build with that message when the variable is
+        # missing, instead of quietly baking an empty string into the bundle and
+        # producing a frontend that cannot authenticate.
+        VITE_AUTH_CLIENT_ID: ${VITE_AUTH_CLIENT_ID:?missing VITE_AUTH_CLIENT_ID for the frontend image}
+        VITE_AUTH_ISSUER: ${VITE_AUTH_ISSUER:?missing VITE_AUTH_ISSUER for the frontend image}
+    networks:
+      - internal
+    healthcheck:
+      # ⚠ `/nginx-health` AND NOT `/`. With the SPA fallback active, ANY path
+      # returns 200, so a probe against `/` could not distinguish a healthy nginx
+      # from one whose static directory is empty. This route exists solely to be
+      # probed. See apps/web/nginx.conf.
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:80/nginx-health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── API ─────────────────────────────────────────────────────────────────────
+  api:
+    image: ${API_IMAGE:-leetcamp-api:local}
+    container_name: leetcamp-api
+    restart: unless-stopped
+    build:
+      # Same root context (`..`), same reason: apps/api depends on the workspace
+      # packages with `workspace:*`.
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      # ALL the API's configuration enters here: DATABASE_URL, DIRECT_URL,
+      # AUTH_*, CORS_ORIGINS. Nothing is baked into the image — the same image
+      # serves every environment. Template: ./.env.example (i.e. deploy/.env.example)
+      - ./.env
+    environment:
+      # These are set HERE and not in `.env` because they are properties of THIS
+      # TOPOLOGY, not of the installation. Changing them from the env file would
+      # break the proxy's routing with nothing to warn you.
+      NODE_ENV: production
+      PORT: '5090'
+      # Double-gated in code (it also requires NODE_ENV != production), so this
+      # does not publish the spec in production even if it were true.
+      ENABLE_OPENAPI_ENDPOINT: 'false'
+      # ⚠ MAY ONLY BE true ON ONE INSTANCE. See the header warning. With this on,
+      # each extra replica runs every job one more time.
+      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-false}
+      SCHEDULER_BOOT_DELAY_MS: ${SCHEDULER_BOOT_DELAY_MS:-10000}
+      SCHEDULER_HEARTBEAT_MINUTES: ${SCHEDULER_HEARTBEAT_MINUTES:-15}
+    networks:
+      - internal
+    # ⚠ ONE REPLICA. Not a capacity recommendation — see the header. Compose
+    # ignores this key outside Swarm; it is here as a declaration of intent, not
+    # as a safeguard.
+    deploy:
+      replicas: 1
+    healthcheck:
+      # ⚠ `/health` IS LIVENESS AND DOES NOT TOUCH THE DATABASE, on purpose. If
+      # the database is down the process is still alive and restarting it fixes
+      # nothing — it only adds a restart loop to an incident that already exists.
+      # `/health/ready` (readiness, which DOES query the database) is for
+      # deciding whether to send traffic, not whether to kill the container.
+      #
+      # `node -e` and not curl: the slim image ships neither curl nor wget, and
+      # installing one to run a healthcheck is a package more than is needed.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5090/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      # Generous: startup validates the environment, composes the dependencies
+      # and opens the connection pool.
+      start_period: 20s
+
+networks:
+  # Internal bridge network. Services resolve each other by name (`api`, `web`),
+  # which is exactly what deploy/Caddyfile uses.
+  internal:
+    driver: bridge
+
+volumes:
+  # Certificates and ACME keys. See the warning on the caddy service.
+  caddy_data:
+  caddy_config:

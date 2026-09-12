@@ -1,0 +1,41 @@
+{
+  "name": "leetcamp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//packageManager": "Pinned so corepack, CI and the Dockerfiles all use the same pnpm. health.sh reads engines.node and this field rather than duplicating either.",
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "//scripts": [
+    "build/typecheck/test are RECURSIVE (`pnpm -r`): they cover every workspace,",
+    "not just one. `lint` is NOT recursive — it is a single root-level invocation,",
+    "because eslint-plugin-boundaries has to see the whole tree at once to classify",
+    "imports that cross package borders."
+  ],
+  "scripts": {
+    "dev": "pnpm --filter \"@leetcamp/api\" dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "lint": "eslint --max-warnings 0 .",
+    "health": "bash health.sh"
+  },
+  "//devDependencies": [
+    "Conservative ^ ranges. Resolve the real versions with Context7 MCP before",
+    "installing — see templates/README.md.",
+    "",
+    "These live at the ROOT because the lint is a single root invocation and needs",
+    "the plugin resolvable from here. eslint-import-resolver-typescript pulls in the",
+    "native unrs-resolver: see the warning in pnpm-workspace.yaml about what breaks,",
+    "silently, when its postinstall is blocked."
+  ],
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-import-resolver-typescript": "^4.4.0",
+    "eslint-plugin-boundaries": "^7.1.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.40.0"
+  }
+}

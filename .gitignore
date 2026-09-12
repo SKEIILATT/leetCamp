@@ -1,10 +1,13 @@
 # AI / agent tooling
 .claude/
+.agents/
 CLAUDE.md
 .mcp.json
 AGENTS.md
 agent-harness-kit.config.json
 .harness/
+docs/DECISIONS.md
+skills-lock.json
 
 # agent-harness-kit
 .harness/harness.db

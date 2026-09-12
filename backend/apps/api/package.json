@@ -1,0 +1,68 @@
+{
+  "name": "@leetcamp/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//scripts": [
+    "`dev` uses --conditions=development so tsx resolves the workspace packages to",
+    "their TypeScript sources: no build step between editing the domain and seeing",
+    "the change. `start` MUST NOT carry that flag — inside the runtime image it",
+    "would point at src/*.ts files that were never shipped, and the container dies",
+    "with ERR_MODULE_NOT_FOUND.",
+    "",
+    "`typecheck` and `build` both run db:generate first: the generated client is a",
+    "build artefact, git-ignored, and tsc cannot compile without it on a clean clone.",
+    "",
+    "`build` ends with copy-prisma-client.mjs — see that script for why."
+  ],
+  "scripts": {
+    "dev": "tsx watch --conditions=development --env-file-if-exists=.env src/main.ts",
+    "start": "node --env-file-if-exists=.env dist/main.js",
+    "typecheck": "pnpm db:generate && tsc --noEmit -p tsconfig.json",
+    "build": "pnpm db:generate && tsc -p tsconfig.build.json && node scripts/copy-prisma-client.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "cd ../.. && eslint --max-warnings 0 apps/api",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:pull": "prisma db pull",
+    "db:status": "prisma migrate status",
+    "db:validate": "prisma validate"
+  },
+  "//dependencies": [
+    "Conservative ^ ranges. Resolve the real versions with Context7 MCP before",
+    "installing — see templates/README.md.",
+    "",
+    "SCAFFOLD: school clean keeps both @leetcamp/application and @leetcamp/domain",
+    "lines below — they resolve to two distinct workspace packages. School",
+    "hexagonal collapses both placeholders to the same @leetcamp/core value, so",
+    "scaffold.mjs must drop the @leetcamp/application line for that school —",
+    "leaving both would substitute to a duplicate JSON key. See templates/README.md."
+  ],
+  "dependencies": {
+    "@fastify/cors": "^11.0.0",
+    "@fastify/rate-limit": "^11.0.0",
+    "@fastify/swagger": "^9.0.0",
+    "@prisma/adapter-pg": "^6.19.0",
+    "@prisma/client": "^6.19.0",
+    "@t3-oss/env-core": "^0.13.0",
+    "@leetcamp/application": "workspace:*",
+    "@leetcamp/domain": "workspace:*",
+    "fastify": "^5.0.0",
+    "fastify-plugin": "^6.0.0",
+    "fastify-type-provider-zod": "^7.0.0",
+    "pg": "^8.16.0",
+    "pino": "^10.0.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "pino-pretty": "^13.0.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  }
+}

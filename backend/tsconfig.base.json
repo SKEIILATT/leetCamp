@@ -1,0 +1,55 @@
+{
+  // Shared TypeScript base for the NODE workspaces: packages/domain,
+  // packages/application and apps/api.
+  //
+  // ⚠ apps/web deliberately does NOT extend this. That workspace is a browser
+  // bundle resolved by Vite and needs `moduleResolution: bundler` plus DOM libs;
+  // this base targets Node ESM. It repeats the strictness flags in its own
+  // tsconfig instead of inheriting — those flags are the part that matters, and
+  // bending a Node base into something a bundler has to fight is not worth the
+  // four duplicated lines.
+  //
+  // The file is named `tsconfig.base.json` and not `tsconfig.json` on purpose:
+  // it is an extension base, not a compilable project. Nobody should be able to
+  // run `tsc -p tsconfig.json` at the root and believe they compiled something.
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "esnext",
+
+    // Overridden per workspace: `[]` in domain and application so they cannot
+    // touch the runtime, `["node"]` in apps/api which is infrastructure. The
+    // empty default here means a new workspace that forgets to choose gets the
+    // restrictive option, not the permissive one.
+    "types": [],
+
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    /* ── Rigour ──────────────────────────────────────────────────────────────
+       These are what make the core safe to refactor. Turning any of them off
+       later is not a local decision: it changes the contract every workspace
+       was written against. */
+    "strict": true,
+    // Indexing an array or a record yields `T | undefined`. Catches the single
+    // most common source of runtime `undefined` in TypeScript code that
+    // type-checks cleanly.
+    "noUncheckedIndexedAccess": true,
+    // `{ a?: string }` is NOT satisfied by `{ a: undefined }`. This is why the
+    // codebase uses conditional spreads (`...(x !== undefined ? { x } : {})`)
+    // instead of assigning possibly-undefined values to optional keys.
+    "exactOptionalPropertyTypes": true,
+
+    /* ── Pure ESM: explicit .js extensions in imports, no transpile magic ──── */
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+
+    // On for build speed. It means third-party .d.ts files are not checked —
+    // acceptable, because a broken dependency type shows up at the call site
+    // anyway, and checking every node_modules declaration costs seconds on
+    // every run.
+    "skipLibCheck": true
+  }
+}

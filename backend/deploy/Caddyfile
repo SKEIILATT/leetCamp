@@ -1,0 +1,97 @@
+# Caddyfile — the edge proxy.
+#
+# The ONLY service in the compose that publishes ports. web and api live on the
+# internal network and only talk to this.
+#
+#     Internet ──► caddy (80/443, TLS)
+#                    ├── /api/*      ──► api:5090
+#                    ├── /health*    ──► api:5090
+#                    └── /*          ──► web:80  (nginx serving the SPA)
+#
+# ── WHY A SINGLE DOMAIN ─────────────────────────────────────────────────────
+# This is the design decision everything else rests on. The browser loads the
+# SPA from `https://domain/` and the bundle calls `/api/v1/...` — SAME ORIGIN.
+# No preflight, no `Access-Control-Allow-Origin` to tune per environment, and if
+# the session ever moves to cookies they will be first-party without
+# `SameSite=None` or third-party blocking problems.
+#
+# It is also why `VITE_API_BASE_URL` defaults to `/api` and is validated with
+# `.min(1)` instead of `.url()` — see apps/web/src/env.schema.ts.
+#
+# ── THE /api PREFIX IS NOT STRIPPED ─────────────────────────────────────────
+# Fastify mounts its routes WITH the prefix: they are `/api/v1/me`, not
+# `/v1/me`. A `uri strip_prefix /api` here — the reflex when writing a proxy —
+# would deliver every request to the API as `/v1/me` and collect a 404.
+# Caddy's `reverse_proxy` passes the path through untouched, which is exactly
+# what is needed. If you change one side, change the other.
+
+# The site address comes from an environment variable, and that is the mechanism
+# that lets THE SAME Caddyfile serve local and production:
+#
+#   · Production: SITE_ADDRESS=app.example.com → Caddy requests a certificate
+#     from Let's Encrypt over ACME HTTP-01, renews it itself, and redirects
+#     80→443.
+#   · Local:      SITE_ADDRESS=:80             → plain HTTP, no ACME. There is no
+#     public domain to validate, so requesting a certificate would be impossible.
+#
+# The compose default is `:80`, so `docker compose up` brings the stack up on
+# http://localhost without a TLS fight.
+{$SITE_ADDRESS} {
+	# Compresses whatever the origin did not compress already. nginx already
+	# gzips the bundle; this covers the API's JSON responses.
+	encode zstd gzip
+
+	# ── API ──────────────────────────────────────────────────────────────────
+	# ⚠ ORDER MATTERS. Caddy evaluates `handle` blocks from specific to generic
+	# and the first match wins. `/api/*` must come before `/*`, or every API call
+	# is served the SPA's index.html with a 200 — which surfaces in the browser
+	# as "the API returns HTML", one of the more confusing ways to lose an
+	# afternoon.
+	handle /api/* {
+		reverse_proxy api:5090
+	}
+
+	# API probes. `/health` (liveness, does not touch the database) and
+	# `/health/ready` (readiness, does) are mounted at the API's ROOT, not under
+	# /api, so they need their own rule or they fall through to the SPA.
+	handle /health* {
+		reverse_proxy api:5090
+	}
+
+	# The OpenAPI document, when enabled. Double-gated inside the API
+	# (ENABLE_OPENAPI_ENDPOINT=true AND NODE_ENV != production), so in a
+	# production deployment this path returns 404 even though the rule exists.
+	handle /openapi {
+		reverse_proxy api:5090
+	}
+
+	# ── Frontend ─────────────────────────────────────────────────────────────
+	# Everything else goes to the SPA's nginx, which resolves the index.html
+	# fallback. The proxy does NOT reimplement that fallback: it belongs to
+	# whoever serves the static files, and duplicating it here would be a second
+	# source of truth that goes stale the day the entry file is renamed.
+	handle {
+		reverse_proxy web:80
+	}
+
+	# ── Security headers ─────────────────────────────────────────────────────
+	# Deliberately conservative: NO Content-Security-Policy. A CSP written
+	# without measuring which inline styles and scripts the UI actually needs
+	# breaks the whole application on the first deploy. Adding one is its own
+	# task, with measurement — not a side effect of setting up a proxy.
+	header {
+		# HSTS only means anything over HTTPS; in local mode (:80) the browser
+		# ignores the header, so leaving it set costs nothing.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Do not advertise the server.
+		-Server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

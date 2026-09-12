@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    // Same as the domain: no ambient Node types. The application layer
+    // orchestrates use cases, it does not talk to the runtime. See the longer
+    // note in packages/domain/tsconfig.json — it is the second of the three
+    // defence layers around the hexagonal boundary.
+    "types": [],
+    // Redundant with tsconfig.base.json on purpose, to keep the package's
+    // contract self-documented.
+    "strict": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["src/**/*.ts"]
+}

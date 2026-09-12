@@ -1,0 +1,34 @@
+packages:
+  - 'apps/*'
+  # SCAFFOLD: drop the next line in the `web` preset (no packages/).
+  - 'packages/*'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# pnpm blocks postinstall scripts unless the package is allow-listed here.
+#
+# ⚠ `unrs-resolver` IS LOAD-BEARING AND FAILS SILENTLY.
+#
+# It is the native resolver behind `eslint-import-resolver-typescript`. Without
+# its compiled binary, the resolver cannot map a workspace name (`@leetcamp/domain`)
+# to its source files, so `eslint-plugin-boundaries` stops classifying imports
+# between packages — and every boundary rule then passes VACUOUSLY.
+#
+# The result is a lint that stays green while enforcing absolutely nothing,
+# which is worse than having no lint at all because it grants false confidence.
+# Nothing about that failure is visible in the output. The only real protection
+# is the negative test: the `quality` job in CI plants a deliberate violation and
+# fails if the lint does not reject it.
+#
+# The rest of these compile or download native binaries and simply do not work
+# without their postinstall.
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTE: the `packageManager` field pins pnpm 10.20.0. `allowBuilds` is a pnpm 11+
+# key and is silently ignored on 10.x — use the pnpm 10 equivalent instead.
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma
+  - esbuild
+  - unrs-resolver
+  # macOS file watcher. Absent on Linux; harmless to allow.
+  - fsevents

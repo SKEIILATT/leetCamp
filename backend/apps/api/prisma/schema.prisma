@@ -1,0 +1,67 @@
+// Prisma schema — STARTING POINT. The `User` model exists because the auth
+// plugin needs somewhere to read a role from; everything else is yours.
+//
+// ── THE TWO URLS ARE NOT A DUPLICATE ─────────────────────────────────────────
+// `url`       → the RUNTIME connection, through the pooler in transaction mode.
+// `directUrl` → the DIRECT connection, session mode, used by `migrate` and
+//               `db pull`.
+//
+// Transaction-mode pooling does not support what migrations need: statements
+// that depend on session state, advisory locks, DDL inside long transactions.
+// Pointing both at the pooled URL produces migrations that fail in ways that
+// look like corruption. Both are validated at boot in src/shared/config/env.ts.
+
+generator client {
+  provider = "prisma-client-js"
+  // Generated INTO src/ so tsc can see the .d.ts, and git-ignored because it is
+  // an artefact. `typecheck` and `build` regenerate it, so a clean clone needs
+  // to remember nothing. Committing it guarantees that one day the schema and
+  // the client disagree.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// The authorization record. Adjust the columns to your real table; keep the
+/// four properties the auth plugin depends on:
+///
+///   · a subject column, distinct from the primary key
+///   · a role id
+///   · an activity flag
+///   · a soft-delete marker
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  /// The identity provider's subject (`sub` claim).
+  ///
+  /// ⚠ SEPARATE FROM `id` ON PURPOSE, and unique. Looking a user up by `id`
+  /// using the token's `sub` throws no error — it finds nothing, and every user
+  /// silently stops resolving their role. Having two columns is what makes that
+  /// mistake impossible to make by accident.
+  subject String @unique
+
+  email String?
+
+  /// Raw role id. The number → role translation lives in the domain's
+  /// `roles.ts`, which is the single source of truth shared with the frontend.
+  roleId Int @map("role_id")
+
+  /// Tenants / organizations / sites in scope. An empty list means "no scope",
+  /// never "all" — see the note on `RequestIdentity.scopeIds`.
+  scopeIds String[] @map("scope_ids")
+
+  /// Filtered in the QUERY, never after the fact: a deactivated account that
+  /// keeps working is what a forgotten post-filter looks like in production.
+  status String @default("active")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([subject])
+  @@map("users")
+}

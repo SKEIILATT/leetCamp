@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ── Environment ──────────────────────────────────────────────────────────────
+# The bare `.env` pattern has NO leading slash, so it matches at ANY depth:
+# apps/api/.env, apps/web/.env and deploy/.env are all covered. Verify with:
+#   git check-ignore -v deploy/.env
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Backups the deployment workflow may leave on the server before rewriting image
+# tags: they carry the environment's credentials and must never show up as
+# untracked files.
+.env.bak.*
+
+# `.env.example` files are DOCUMENTATION and ARE committed — the negation has to
+# come after the patterns above.
+!.env.example
+!**/.env.example
+
+# Secrets / keys, belt and braces
+*.pem
+*.key
+
+# ── Generated ORM client ─────────────────────────────────────────────────────
+# An ARTEFACT: `prisma generate` produces it from schema.prisma, which IS
+# committed. The `typecheck` and `build` scripts regenerate it before invoking
+# tsc, so a clean clone needs to remember nothing.
+#
+# Committing it would guarantee that one day the schema and the client disagree —
+# and the symptom would be a type error in code nobody touched.
+apps/api/src/generated/
+
+# ⚠ NOTE THE ASYMMETRY: apps/web/src/generated/ IS COMMITTED, on purpose. It is
+# produced by fetching the spec from a RUNNING API, and a static typecheck
+# cannot depend on a listening server. See apps/web/scripts/openapi.ts.
+
+# Logs
+*.log
+npm-debug.log*

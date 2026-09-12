@@ -1,0 +1,30 @@
+{
+  "name": "@leetcamp/application",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//exports": "Same conditional-exports contract as the domain package — see the note there.",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "cd ../.. && eslint --max-warnings 0 packages/application"
+  },
+  "//dependencies": "The domain is the ONLY workspace dependency this package may ever declare. Adding a second one is the moment the layering broke.",
+  "dependencies": {
+    "@leetcamp/domain": "workspace:*"
+  },
+  "//devDependencies": "Versions are conservative ^ ranges. Resolve the real ones with Context7 MCP before installing — see the README.",
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  }
+}

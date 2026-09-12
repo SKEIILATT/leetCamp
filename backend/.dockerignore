@@ -1,0 +1,65 @@
+# .dockerignore — the build context for BOTH images.
+#
+# ⚠ THE BUILD CONTEXT IS THE REPOSITORY ROOT, not the app directory:
+#
+#     docker build -f apps/api/Dockerfile .
+#     docker build -f apps/web/Dockerfile .
+#
+# Mandatory, because this is a pnpm workspace: `apps/api` depends on
+# `@leetcamp/domain` and `@leetcamp/application` with `workspace:*`, and pnpm can
+# only resolve that if `pnpm-workspace.yaml`, the root `pnpm-lock.yaml` and
+# `packages/*` are inside the container. Building with `apps/api/` as the context
+# fails with ERR_PNPM_WORKSPACE_PKG_NOT_FOUND.
+#
+# ONE file for both images, because Docker resolves `.dockerignore` per CONTEXT,
+# not per Dockerfile. What each image does not need is filtered by selective
+# `COPY` inside its own Dockerfile.
+
+# ── Dependencies: reinstalled inside the container ──────────────────────────
+# Critical, not cosmetic: the development machine is probably macOS/arm64 and the
+# images are linux. Carrying node_modules in would ship native binaries for the
+# wrong OS (ORM engines, esbuild, fsevents) on top of inflating the context by
+# hundreds of megabytes.
+node_modules
+**/node_modules
+
+# ── Build artefacts: regenerated inside the container ───────────────────────
+dist
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# The generated ORM client is already git-ignored; the build stage regenerates it.
+apps/api/src/generated
+
+# ── Secrets: NEVER in an image ──────────────────────────────────────────────
+# Real `.env*` files stay out of the context entirely. Configuration arrives via
+# `--build-arg` (the public frontend variables) or as runtime environment
+# variables (the API). The `.env.example` files DO go in: they are documentation.
+.env
+.env.*
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+
+# ── History and tooling the image does not need ─────────────────────────────
+.git
+.gitignore
+.github
+.vscode
+.idea
+docs
+
+# ── Test artefacts ──────────────────────────────────────────────────────────
+coverage
+test-results
+
+# ── Infra: the compose file is not copied into the images ───────────────────
+deploy
+
+# ── OS noise ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log

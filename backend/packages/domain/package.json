@@ -1,0 +1,41 @@
+{
+  "name": "@leetcamp/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "//exports": [
+    "Conditional exports, and the `development` condition is the load-bearing one.",
+    "tsx and vitest apply it, so they resolve straight to ./src/index.ts and the",
+    "specs run without a prior build. Plain `node` does NOT apply it: it falls to",
+    "`default` and needs ./dist/index.js, which is why the API Dockerfile compiles",
+    "every workspace and copies each dist/ into the runtime image.",
+    "Drop `development` and every test run needs a build first."
+  ],
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "//scripts": [
+    "The four names are fixed: health.sh step 2 fails the whole run if a workspace",
+    "does not declare typecheck/build/test/lint (or carry a documented exemption),",
+    "because `pnpm -r <script>` skips a missing script in complete silence.",
+    "`lint` does `cd ../..` first: eslint-plugin-boundaries resolves file paths",
+    "relative to the repo root, and running it from inside the package makes every",
+    "path stop matching the element patterns — the rules then pass vacuously."
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "cd ../.. && eslint --max-warnings 0 packages/domain"
+  },
+  "//devDependencies": "Versions are conservative ^ ranges. Resolve the real ones with Context7 MCP before installing — see the README.",
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  }
+}

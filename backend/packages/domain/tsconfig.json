@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    // `types: []` cuts off the ambient @types/node declarations. Intentional:
+    // the domain must not be able to touch `process`, `fs` or any runtime API.
+    // If something here needs Node, it belongs in infrastructure.
+    //
+    // This is the SECOND of the three defence layers around the hexagonal
+    // boundary (the first is this package having no runtime dependencies, the
+    // third is eslint-plugin-boundaries). Unlike the linter, this one cannot
+    // fail silently: removing it does not break anything today, which is
+    // exactly why the comment has to say what it is for.
+    "types": [],
+    // Redundant with tsconfig.base.json on purpose: they leave the package's
+    // contract self-documented without opening the base file.
+    "strict": true,
+    "noUncheckedIndexedAccess": true
+  },
+  "include": ["src/**/*.ts"]
+}
