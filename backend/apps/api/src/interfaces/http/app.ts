@@ -17,10 +17,11 @@ import type {
   TokenVerifier,
   UserAuthorizationRepository,
 } from '@leetcamp/domain';
-import type { AuthUseCases } from '@leetcamp/application';
+import type { AuthUseCases, ChallengesUseCases } from '@leetcamp/application';
 
 import { loggerOptionsFor } from '../../shared/logger.js';
 import { authPlugin } from './plugins/auth.plugin.js';
+import { registerAdminChallengeRoutes } from './routes/admin-challenges.route.js';
 import { registerAuthRoutes } from './routes/auth.route.js';
 import { registerHealthRoutes } from './routes/health.route.js';
 import { registerMeRoutes } from './routes/me.route.js';
@@ -75,6 +76,7 @@ export interface HttpAppDeps {
   // a bag of `any` — because that is exactly what lets tests boot this app with
   // stubs and still be type-checked.
   readonly authUseCases: AuthUseCases;
+  readonly challengesUseCases: ChallengesUseCases;
 }
 
 /**
@@ -267,6 +269,7 @@ export async function buildHttpApp(deps: HttpAppDeps): Promise<FastifyInstance> 
   // 7) Routes.
   registerHealthRoutes(app, deps.config.version, deps.databaseProbe);
   registerAuthRoutes(app, deps.authUseCases);
+  registerAdminChallengeRoutes(app, deps.challengesUseCases);
   registerMeRoutes(app);
 
   // 8) The spec endpoint, GATED: never available in production.

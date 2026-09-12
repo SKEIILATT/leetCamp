@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { buildAuthUseCases, buildSystemUseCases } from '@leetcamp/application';
+import { buildAuthUseCases, buildChallengesUseCases, buildSystemUseCases } from '@leetcamp/application';
 
 import type { Env } from './shared/config/env.js';
 import { API_VERSION } from './shared/version.js';
@@ -8,8 +8,11 @@ import { createJwtTokenService, createScryptPasswordHasher } from './infrastruct
 import { createSystemClock } from './infrastructure/clock/index.js';
 import { createUuidGenerator } from './infrastructure/id/index.js';
 import {
+  createPrismaCategoryRepository,
+  createPrismaChallengeRepository,
   createPrismaClient,
   createPrismaDatabaseHealthProbe,
+  createPrismaDifficultyRepository,
   createPrismaUserAuthorizationRepository,
   createPrismaUserRepository,
 } from './infrastructure/persistence/index.js';
@@ -106,6 +109,14 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     clock: createSystemClock(),
   });
 
+  const challengesUseCases = buildChallengesUseCases({
+    challengeRepository: createPrismaChallengeRepository(prisma, log),
+    categoryRepository: createPrismaCategoryRepository(prisma, log),
+    difficultyRepository: createPrismaDifficultyRepository(prisma, log),
+    idGenerator,
+    clock: createSystemClock(),
+  });
+
   // ── Scheduler ──────────────────────────────────────────────────────────────
   //
   // It does NOT start on construction: `start()` is called below, after the
@@ -128,6 +139,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     databaseProbe,
     scheduler,
     authUseCases,
+    challengesUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,

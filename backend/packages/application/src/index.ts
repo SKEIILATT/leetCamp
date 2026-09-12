@@ -14,4 +14,5 @@
  * makes the set of verticals readable at a glance.
  */
 export * from './auth/index.js';
+export * from './challenges/index.js';
 export * from './system/index.js';

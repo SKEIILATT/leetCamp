@@ -80,6 +80,64 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
+  createdChallenges Challenge[]
+
   @@index([subject])
   @@map("users")
+}
+
+/// Taxonomy challenges are filed under — see the note on `CategoryRepository`
+/// in @leetcamp/domain for why this is a table and not a code catalogue.
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  challenges Challenge[]
+
+  @@map("categories")
+}
+
+model Difficulty {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String @unique
+  /// Sort order, lower = easier. Not unique — see the domain type.
+  level Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  challenges Challenge[]
+
+  @@map("difficulties")
+}
+
+/// Fase 1 only has the prediction/analysis type — flattened onto this model
+/// rather than split into a separate `PredictionChallenge` table for a `type`
+/// that cannot yet be anything else. See the domain entity's header comment.
+model Challenge {
+  id           String @id @default(uuid()) @db.Uuid
+  categoryId   String @map("category_id") @db.Uuid
+  difficultyId String @map("difficulty_id") @db.Uuid
+
+  title          String
+  promptMarkdown String @map("prompt_markdown")
+  codeSnippet    String @map("code_snippet")
+  expectedAnswer String @map("expected_answer")
+
+  /// `draft` | `published` — domain-validated, not a DB enum/CHECK, same
+  /// convention as `User.status`: adding a status is a code change reviewed
+  /// through the domain type, not a migration.
+  status String @default("draft")
+
+  createdBy String @map("created_by") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category   Category   @relation(fields: [categoryId], references: [id])
+  difficulty Difficulty @relation(fields: [difficultyId], references: [id])
+  creator    User       @relation(fields: [createdBy], references: [id])
+
+  @@index([status])
+  @@map("challenges")
 }

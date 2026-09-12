@@ -18,6 +18,11 @@
  * Add the re-export here as each aggregate lands. Keeping this file as the only
  * entry point is what lets `index.ts` stay a flat, greppable list.
  */
+export * from './catalog.js';
+export * from './catalog-errors.js';
+export * from './challenge.js';
+export * from './challenge-errors.js';
+export * from './challenge-repository.js';
 export * from './user.js';
 export * from './user-errors.js';
 export * from './user-repository.js';

@@ -28,7 +28,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:pull": "prisma db pull",
     "db:status": "prisma migrate status",
-    "db:validate": "prisma validate"
+    "db:validate": "prisma validate",
+    "promote:admin": "node --env-file-if-exists=.env scripts/promote-to-admin.mjs"
   },
   "//dependencies": [
     "Conservative ^ ranges. Resolve the real versions with Context7 MCP before",
