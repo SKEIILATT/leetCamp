@@ -49,8 +49,6 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/domain/package.json packages/domain/
 COPY packages/application/package.json packages/application/
 COPY apps/api/package.json apps/api/
-# SCAFFOLD: drop the next line in the `server` preset (no apps/web).
-COPY apps/web/package.json apps/web/
 
 # `--filter @leetcamp/api...` installs api + domain + application and SKIPS the
 # whole frontend tree.
@@ -86,8 +84,6 @@ WORKDIR /app
 COPY --from=build /app/pnpm-workspace.yaml /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=build /app/packages ./packages
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
-# SCAFFOLD: drop the next line in the `server` preset (no apps/web).
-COPY --from=build /app/apps/web/package.json ./apps/web/package.json
 # `pnpm deploy` materialises a flat node_modules in /prod/api containing ONLY
 # the production dependencies of the API — workspace deps included, as real
 # copies rather than symlinks into the store, which would not survive the stage

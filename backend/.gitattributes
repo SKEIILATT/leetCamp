@@ -1,0 +1,6 @@
+# Force LF regardless of platform `core.autocrlf` — a shell script checked out
+# with CRLF fails at `exec` inside a Linux container: `#!/bin/sh\r` names an
+# interpreter that does not exist, and it fails as "no such file or directory"
+# even though the file is there. See docs/DECISIONS.md.
+*.sh text eol=lf
+Dockerfile text eol=lf

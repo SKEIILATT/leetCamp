@@ -55,6 +55,29 @@
 name: leetcamp
 
 services:
+  # ── database ────────────────────────────────────────────────────────────────
+  # Self-hosted, no managed provider. No `ports:` key — only `api`, over the
+  # internal network, can reach it. Same "no published ports" guarantee as
+  # web/api below: nothing outside this compose can talk to it directly.
+  postgres:
+    image: postgres:16-alpine
+    container_name: leetcamp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?missing POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-leetcamp}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # ── proxy ───────────────────────────────────────────────────────────────────
   # ⚠ THE ONLY SERVICE WITH PUBLISHED PORTS. web and api are unreachable from
   # outside the internal network — not even from the host, because they have no
@@ -176,6 +199,9 @@ services:
       SCHEDULER_HEARTBEAT_MINUTES: ${SCHEDULER_HEARTBEAT_MINUTES:-15}
     networks:
       - internal
+    depends_on:
+      postgres:
+        condition: service_healthy
     # ⚠ ONE REPLICA. Not a capacity recommendation — see the header. Compose
     # ignores this key outside Swarm; it is here as a declaration of intent, not
     # as a safeguard.
@@ -212,3 +238,6 @@ volumes:
   # Certificates and ACME keys. See the warning on the caddy service.
   caddy_data:
   caddy_config:
+  # Postgres data directory. Self-hosted, no managed provider doing backups for
+  # you — deleting this volume (`docker compose down -v`) deletes the database.
+  postgres_data:

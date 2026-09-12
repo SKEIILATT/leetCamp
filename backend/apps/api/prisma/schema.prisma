@@ -10,6 +10,11 @@
 // that depend on session state, advisory locks, DDL inside long transactions.
 // Pointing both at the pooled URL produces migrations that fail in ways that
 // look like corruption. Both are validated at boot in src/shared/config/env.ts.
+//
+// EN ESTE PROYECTO: self-hosted, sin pooler delante. `url` y `directUrl`
+// apuntan a la MISMA instancia (ver el servicio `postgres` en
+// deploy/docker-compose.yml). El comentario de arriba sigue siendo válido si
+// algún día se agrega un pooler (ej. PgBouncer).
 
 generator client {
   provider = "prisma-client-js"
