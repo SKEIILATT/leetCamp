@@ -37,11 +37,12 @@ symptom is a build that fails validation for no apparent reason.
 | `LOG_LEVEL` | no | `info` | pino level |
 | `CORS_ORIGINS` | **yes** | — | CSV of exact origins, **no trailing slash** |
 | `ENABLE_OPENAPI_ENDPOINT` | no | `false` | Publishes `GET /openapi` |
-| `DATABASE_URL` | **yes** | — | RUNTIME connection (pooler, transaction mode) |
-| `DIRECT_URL` | **yes** | — | DIRECT connection (session mode) for migrations |
-| `AUTH_ISSUER` | **yes** | — | Expected `iss` claim |
-| `AUTH_AUDIENCE` | **yes** | — | Expected `aud` claim |
-| `AUTH_JWKS_URL` | no | derived | JWKS endpoint |
+| `DATABASE_URL` | **yes** | — | RUNTIME connection. Self-hosted, no pooler — same value as `DIRECT_URL` |
+| `DIRECT_URL` | **yes** | — | DIRECT connection, used by migrations |
+| `AUTH_ISSUER` | **yes** | — | `iss` claim this API stamps and requires (self-issued JWT) |
+| `AUTH_AUDIENCE` | **yes** | — | `aud` claim, same reasoning |
+| `JWT_SECRET` | **yes** | — | HMAC secret (32+ chars) used to sign AND verify tokens |
+| `JWT_TTL_SECONDS` | no | `86400` | How long an issued token stays valid |
 | `SCHEDULER_ENABLED` | no | `false` | ⚠ Only `true` on ONE instance |
 | `SCHEDULER_BOOT_DELAY_MS` | no | `10000` | Delay before the first job after startup |
 | `SCHEDULER_HEARTBEAT_MINUTES` | no | `15` | Cadence of the reference job |
@@ -80,10 +81,16 @@ would break CORS in production without anything flagging it.
 
 ### Why `DATABASE_URL` and `DIRECT_URL` are not the same
 
-They are not a duplicate. The pooler in transaction mode **does not support
-what migrations need**: statements that depend on session state, advisory
-locks, DDL inside long transactions. Pointing both at the pooler produces
-migration failures that look like corruption.
+They are not a duplicate **in general**. The pooler in transaction mode **does
+not support what migrations need**: statements that depend on session state,
+advisory locks, DDL inside long transactions. Pointing both at the pooler
+produces migration failures that look like corruption.
+
+**In this project specifically**, both variables currently hold the identical
+value: Postgres is self-hosted (see `docs/DECISIONS.md`) with no pooler in
+front of it. The distinction still exists in the schema and in `env.ts` so that
+adding a pooler later (PgBouncer, say) is a one-variable change, not a
+refactor.
 
 ### Why the password is percent-encoded
 

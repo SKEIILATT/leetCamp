@@ -10,4 +10,5 @@
  */
 export * from './prisma-client.js';
 export * from './prisma-user-authorization-repository.js';
+export * from './prisma-user-repository.js';
 export * from './type-mappers.js';

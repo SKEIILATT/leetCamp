@@ -31,32 +31,45 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-/// The authorization record. Adjust the columns to your real table; keep the
-/// four properties the auth plugin depends on:
-///
-///   · a subject column, distinct from the primary key
-///   · a role id
-///   · an activity flag
-///   · a soft-delete marker
+/// The real product account (leetCamp self-rolled auth — see
+/// docs/DECISIONS.md). Keeps the four properties the auth plugin depends on
+/// (subject column, role id, activity flag, soft-delete marker) alongside the
+/// fields registration/login actually need.
 model User {
   id String @id @default(uuid()) @db.Uuid
 
-  /// The identity provider's subject (`sub` claim).
+  /// The auth subject (the JWT's `sub` claim this API itself issues).
   ///
-  /// ⚠ SEPARATE FROM `id` ON PURPOSE, and unique. Looking a user up by `id`
-  /// using the token's `sub` throws no error — it finds nothing, and every user
-  /// silently stops resolving their role. Having two columns is what makes that
-  /// mistake impossible to make by accident.
+  /// ⚠ SEPARATE COLUMN FROM `id` ON PURPOSE, even though tokens are
+  /// self-issued and `subject` is always set equal to `id` at registration —
+  /// see `apps/api/src/infrastructure/persistence/prisma-user-repository.ts`.
+  /// Keeping the two columns is what lets `UserAuthorizationRepository`
+  /// (`WHERE subject = $1`) stay unchanged if this project ever moves the
+  /// token's `sub` away from being the application id (e.g. behind an
+  /// external IdP later) — see the note on `RequestIdentity.subject`.
   subject String @unique
 
-  email String?
+  email String @unique
+
+  /// Never a plaintext password — see `@leetcamp/domain`'s `PasswordHasher`.
+  passwordHash String @map("password_hash")
+
+  /// Public name shown on the ranking, deliberately separate from `email`.
+  displayName String @map("display_name")
 
   /// Raw role id. The number → role translation lives in the domain's
   /// `roles.ts`, which is the single source of truth shared with the frontend.
   roleId Int @map("role_id")
 
-  /// Tenants / organizations / sites in scope. An empty list means "no scope",
-  /// never "all" — see the note on `RequestIdentity.scopeIds`.
+  /// IANA time zone (e.g. `America/Guayaquil`) — where THIS user's day starts,
+  /// for streak cut-off. Per-user, not global.
+  timezone String
+
+  /// Tenants / organizations / sites in scope. leetCamp has no multi-tenancy
+  /// today; always empty. Kept (rather than dropped) so
+  /// `UserAuthorizationRepository`/`RequestIdentity.scopeIds` need no change
+  /// if that ever becomes a requirement — an empty list means "no scope",
+  /// never "all".
   scopeIds String[] @map("scope_ids")
 
   /// Filtered in the QUERY, never after the fact: a deactivated account that

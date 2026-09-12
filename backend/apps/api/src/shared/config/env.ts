@@ -125,25 +125,38 @@ export const env = createEnv({
     DIRECT_URL: postgresUrl(),
 
     // ── Authentication ────────────────────────────────────────────────────────
+    // Self-issued JWT (see docs/DECISIONS.md): this API signs AND verifies its
+    // own tokens with a shared secret, there is no external identity provider
+    // and no JWKS endpoint.
     /**
-     * REQUIRED. Expected `iss` claim of the tokens this API accepts.
+     * REQUIRED. `iss` claim this API stamps on every token it issues, and
+     * requires on every token it verifies.
      *
      * Not optional and not defaulted on purpose: an issuer left loose turns a
-     * configuration slip into "we accept tokens signed by anyone".
+     * configuration slip into "we accept tokens signed by anyone" — including,
+     * for a self-issued setup, a token minted by a DIFFERENT deployment that
+     * happens to share a leaked or default `JWT_SECRET`.
      */
     AUTH_ISSUER: z.url(),
 
-    /** REQUIRED. Expected `aud` claim. */
+    /** REQUIRED. `aud` claim, same reasoning as `AUTH_ISSUER`. */
     AUTH_AUDIENCE: z.string().min(1),
 
     /**
-     * OPTIONAL. JWKS endpoint holding the public signing keys. When absent it is
-     * derived from `AUTH_ISSUER` using the well-known path.
+     * REQUIRED. HMAC secret used to both SIGN (login) and VERIFY (every
+     * authenticated request) tokens. No default, ever: a default secret in a
+     * self-issued setup does not degrade security, it deletes it — anyone
+     * reading this file could then forge a valid token for any user.
      *
-     * An escape hatch for pointing at a different issuer (staging, a local mock)
-     * without touching code.
+     * 32 bytes minimum (matches a 256-bit key for HS256). Generate one with
+     * `openssl rand -base64 32`.
      */
-    AUTH_JWKS_URL: z.url().optional(),
+    JWT_SECRET: z.string().min(32, 'must be at least 32 characters — generate with `openssl rand -base64 32`'),
+
+    /** How long an issued token stays valid, in SECONDS. Default: 24h — this
+     * product is a once-a-day challenge, not a long-lived session product, so
+     * a same-day re-login is an acceptable and expected trade-off. */
+    JWT_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
 
     // ── Scheduler ─────────────────────────────────────────────────────────────
     /**

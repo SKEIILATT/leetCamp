@@ -1,8 +1,6 @@
 /**
  * Business entities and value objects.
  *
- * SKELETON ON PURPOSE — the scaffolding does not invent your domain.
- *
  * One file per aggregate, each exporting its type plus the invariants that
  * define it. Entities never carry persistence concerns: no `createdAt` you do
  * not use, no ORM decorators, no `id` typed as the database's `bigint`. The
@@ -13,23 +11,13 @@
  * `<aggregate>-errors.ts`, and they build `DomainError`s from the CLOSED
  * catalogue in `../errors.ts`. They never define a new code.
  *
- * Example of the intended shape:
- *
- * ```ts
- * // order.ts
- * export interface Order {
- *   readonly id: string;
- *   readonly total: number;
- *   readonly placedAt: Date;
- * }
- *
- * // order-errors.ts
- * import { notFound, conflict } from '../errors.js';
- * export const orderNotFound = (id: string) => notFound(`Order ${id} not found`);
- * export const orderAlreadyShipped = () => conflict('Order was already shipped');
- * ```
+ * A vertical-specific repository port also lives next to its entity (e.g.
+ * `user-repository.ts`) rather than in the cross-cutting `../ports/` folder —
+ * see the header note in `../index.ts`.
  *
  * Add the re-export here as each aggregate lands. Keeping this file as the only
  * entry point is what lets `index.ts` stay a flat, greppable list.
  */
-export {};
+export * from './user.js';
+export * from './user-errors.js';
+export * from './user-repository.js';

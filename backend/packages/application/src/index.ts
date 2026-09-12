@@ -13,4 +13,5 @@
  * Add one re-export line per vertical. Keeping this file a flat list is what
  * makes the set of verticals readable at a glance.
  */
+export * from './auth/index.js';
 export * from './system/index.js';

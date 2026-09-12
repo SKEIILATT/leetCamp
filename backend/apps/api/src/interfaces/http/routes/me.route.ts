@@ -44,7 +44,7 @@ export function registerMeRoutes(app: FastifyInstance): void {
           200: z.object({
             userId: z.string(),
             email: z.string().optional(),
-            role: z.enum(['admin', 'editor', 'viewer']),
+            role: z.enum(['admin', 'student']),
             roleId: z.number().int(),
             scopeIds: z.array(z.string()),
           }),

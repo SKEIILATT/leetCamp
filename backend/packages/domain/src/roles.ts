@@ -16,8 +16,9 @@
  * for one thing is how an authorization bug becomes invisible.
  */
 
-/** The functional roles the product distinguishes. */
-export type Role = 'admin' | 'editor' | 'viewer';
+/** The functional roles the product distinguishes. leetCamp has no `editor`
+ * tier — an admin manages the question bank, everyone else is a student. */
+export type Role = 'admin' | 'student';
 
 /**
  * Role ids exactly as stored in the database column.
@@ -27,8 +28,7 @@ export type Role = 'admin' | 'editor' | 'viewer';
  */
 export const ROLE_ID = {
   ADMIN: 1,
-  EDITOR: 2,
-  VIEWER: 3,
+  STUDENT: 2,
 } as const;
 
 export type RoleId = (typeof ROLE_ID)[keyof typeof ROLE_ID];
@@ -42,15 +42,13 @@ export type RoleId = (typeof ROLE_ID)[keyof typeof ROLE_ID];
  */
 export const roleIdMap: Readonly<Record<number, Role>> = {
   [ROLE_ID.ADMIN]: 'admin',
-  [ROLE_ID.EDITOR]: 'editor',
-  [ROLE_ID.VIEWER]: 'viewer',
+  [ROLE_ID.STUDENT]: 'student',
 };
 
 /** Display labels for UI and reports. Same key domain as `roleIdMap`. */
 export const roleLabel: Readonly<Record<number, string>> = {
   [ROLE_ID.ADMIN]: 'Administrator',
-  [ROLE_ID.EDITOR]: 'Editor',
-  [ROLE_ID.VIEWER]: 'Viewer',
+  [ROLE_ID.STUDENT]: 'Student',
 };
 
 /**

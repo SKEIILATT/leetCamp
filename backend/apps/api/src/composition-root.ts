@@ -1,15 +1,17 @@
 import type { FastifyInstance } from 'fastify';
-import { buildSystemUseCases } from '@leetcamp/application';
+import { buildAuthUseCases, buildSystemUseCases } from '@leetcamp/application';
 
 import type { Env } from './shared/config/env.js';
 import { API_VERSION } from './shared/version.js';
 import { buildHttpApp } from './interfaces/http/app.js';
-import { createStubTokenVerifier } from './infrastructure/auth/index.js';
+import { createJwtTokenService, createScryptPasswordHasher } from './infrastructure/auth/index.js';
 import { createSystemClock } from './infrastructure/clock/index.js';
+import { createUuidGenerator } from './infrastructure/id/index.js';
 import {
   createPrismaClient,
   createPrismaDatabaseHealthProbe,
   createPrismaUserAuthorizationRepository,
+  createPrismaUserRepository,
 } from './infrastructure/persistence/index.js';
 import {
   createInProcessScheduler,
@@ -51,13 +53,19 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
 
   // ── Concrete adapters ──────────────────────────────────────────────────────
   //
-  // ⚠ REPLACE THE STUB VERIFIER. It authenticates nothing; see the file for how
-  // to write the real one. It is here so the scaffold boots and the seam is
-  // visible, not because it is acceptable.
-  //
-  // `AUTH_ISSUER` and `AUTH_AUDIENCE` are already validated in env.ts precisely
-  // so a real verifier can be dropped in without touching configuration.
-  const tokenVerifier = createStubTokenVerifier({ tokens: {} });
+  // Self-issued JWT (see docs/DECISIONS.md): the SAME service both signs
+  // tokens at login and verifies them on every authenticated request, so it
+  // satisfies both `TokenIssuer` and `TokenVerifier`.
+  const jwtTokenService = createJwtTokenService({
+    secret: env.JWT_SECRET,
+    issuer: env.AUTH_ISSUER,
+    audience: env.AUTH_AUDIENCE,
+    ttlSeconds: env.JWT_TTL_SECONDS,
+  });
+  const tokenVerifier = jwtTokenService;
+
+  const passwordHasher = createScryptPasswordHasher();
+  const idGenerator = createUuidGenerator();
 
   // ── Database ───────────────────────────────────────────────────────────────
   //
@@ -90,6 +98,14 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   const userRepository = createPrismaUserAuthorizationRepository(prisma, log);
   const databaseProbe = createPrismaDatabaseHealthProbe(prisma, log);
 
+  const authUseCases = buildAuthUseCases({
+    userRepository: createPrismaUserRepository(prisma, log),
+    passwordHasher,
+    tokenIssuer: jwtTokenService,
+    idGenerator,
+    clock: createSystemClock(),
+  });
+
   // ── Scheduler ──────────────────────────────────────────────────────────────
   //
   // It does NOT start on construction: `start()` is called below, after the
@@ -111,6 +127,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     userRepository,
     databaseProbe,
     scheduler,
+    authUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,

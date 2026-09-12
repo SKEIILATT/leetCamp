@@ -38,6 +38,7 @@ export function loggerOptionsFor(
         '*.DATABASE_URL',
         '*.DIRECT_URL',
         '*.AUTH_CLIENT_SECRET',
+        '*.JWT_SECRET',
         // Add every new secret-bearing env var here as it is introduced. The
         // cost of listing one that never appears in a log is zero; the cost of
         // remembering later is not.
