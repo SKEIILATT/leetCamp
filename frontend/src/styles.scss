@@ -1,1 +1,51 @@
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+:root {
+  // Paleta real de Coding Bootcamps ESPOL — ver docs/DECISIONS.md
+  --lc-mint: #d1e4dd;
+  --lc-blue: #213a8f;
+  --lc-sky: #009fe3;
+  --lc-violet: #332677;
+  --lc-white: #ffffff;
+  --lc-ink: #030541;
+  --lc-paper: #f9f7ff;
+
+  --lc-font-display: 'Baloo 2', ui-rounded, system-ui, sans-serif;
+  --lc-font-body: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --lc-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: light;
+
+  background-color: var(--lc-paper);
+  color: var(--lc-ink);
+  font-family: var(--lc-font-body);
+
+  // Reset the user agent margin.
+  margin: 0;
+  height: 100%;
+}
 /* You can add global styles to this file, and also import other style files */
