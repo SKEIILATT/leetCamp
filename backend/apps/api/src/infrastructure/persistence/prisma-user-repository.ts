@@ -34,6 +34,17 @@ export function createPrismaUserRepository(
       }
     },
 
+    async findById(id: string): Promise<Result<User | null>> {
+      try {
+        const row = await prisma.user.findFirst({ where: { id, deletedAt: null } });
+        if (!row) return ok(null);
+        return ok(toDomainUser(row));
+      } catch (error) {
+        logger?.error({ err: error }, 'failed to read the user by id');
+        return err(repository('Could not read the user'));
+      }
+    },
+
     async create(user: NewUser & { id: string; createdAt: Date }): Promise<Result<User>> {
       try {
         const row = await prisma.user.create({

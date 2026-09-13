@@ -8,31 +8,8 @@ import {
   type Result,
 } from '@leetcamp/domain';
 
+import { fromDateColumn, toDateColumn } from './calendar-date-column.js';
 import type { PrismaClient } from './prisma-client.js';
-
-/**
- * `date` is a pure calendar date in the domain ('YYYY-MM-DD', no time, no
- * zone), but Postgres/Prisma still represent a `@db.Date` column as a JS
- * `Date` object. THE ROUND-TRIP THROUGH `Date` IS WHERE A ONE-DAY-OFF BUG
- * LIVES if it is done with local-timezone methods:
- *
- *   `new Date(2026, 2, 15)`        → midnight in the SERVER's local zone.
- *   `someDate.getDate()`           → the day number in the SERVER's local zone.
- *
- * Both of those depend on wherever this process happens to be deployed, which
- * is exactly the kind of bug that is invisible in development (server and
- * developer machine share a zone) and shows up only in a specific production
- * region. Every conversion here goes through the UTC-explicit form instead —
- * `T00:00:00.000Z` on the way in, `toISOString().slice(0, 10)` on the way out
- * — so the calendar date is never at the mercy of the process's local zone.
- */
-function toDateColumn(date: string): Date {
-  return new Date(`${date}T00:00:00.000Z`);
-}
-
-function fromDateColumn(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
 
 function toDomain(row: { date: Date; challengeId: string; publishedAt: Date }): DailyChallenge {
   return {

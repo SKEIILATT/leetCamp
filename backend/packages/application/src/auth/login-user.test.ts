@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { err, ok, repository, ROLE_ID, type TokenIssuer, type User } from '@leetcamp/domain';
+import { err, ok, repository, ROLE_ID, type TokenIssuer, type User, type UserRepository } from '@leetcamp/domain';
 
 import { makeLoginUser } from './login-user.js';
 
@@ -20,12 +20,22 @@ const neverIssues: TokenIssuer = {
   },
 };
 
+/** `findById` is unused by `loginUser` — present only to satisfy the port. */
+function fakeUserRepository(overrides: Partial<UserRepository> = {}): UserRepository {
+  return {
+    findByEmail: async () => ok(activeUser),
+    findById: async () => ok(activeUser),
+    create: async () => ok(activeUser),
+    ...overrides,
+  };
+}
+
 describe('loginUser', () => {
   it('issues a token when the password matches', async () => {
     let issuedFor: string | undefined;
 
     const loginUser = makeLoginUser({
-      userRepository: { findByEmail: async () => ok(activeUser), create: async () => ok(activeUser) },
+      userRepository: fakeUserRepository(),
       passwordHasher: { hash: async () => 'x', verify: async () => true },
       tokenIssuer: {
         issueToken: async (identity) => {
@@ -47,7 +57,7 @@ describe('loginUser', () => {
 
   it('rejects an unknown email with the SAME message as a wrong password', async () => {
     const loginUser = makeLoginUser({
-      userRepository: { findByEmail: async () => ok(null), create: async () => ok(activeUser) },
+      userRepository: fakeUserRepository({ findByEmail: async () => ok(null) }),
       passwordHasher: {
         hash: async () => 'x',
         verify: async () => {
@@ -67,7 +77,7 @@ describe('loginUser', () => {
 
   it('rejects a wrong password without issuing a token', async () => {
     const loginUser = makeLoginUser({
-      userRepository: { findByEmail: async () => ok(activeUser), create: async () => ok(activeUser) },
+      userRepository: fakeUserRepository(),
       passwordHasher: { hash: async () => 'x', verify: async () => false },
       tokenIssuer: neverIssues,
     });
@@ -83,7 +93,7 @@ describe('loginUser', () => {
     const inactiveUser: User = { ...activeUser, isActive: false };
 
     const loginUser = makeLoginUser({
-      userRepository: { findByEmail: async () => ok(inactiveUser), create: async () => ok(activeUser) },
+      userRepository: fakeUserRepository({ findByEmail: async () => ok(inactiveUser) }),
       passwordHasher: {
         hash: async () => 'x',
         verify: async () => {
@@ -102,10 +112,9 @@ describe('loginUser', () => {
 
   it('propagates a repository failure instead of turning it into invalid credentials', async () => {
     const loginUser = makeLoginUser({
-      userRepository: {
+      userRepository: fakeUserRepository({
         findByEmail: async () => err(repository('connection refused')),
-        create: async () => ok(activeUser),
-      },
+      }),
       passwordHasher: { hash: async () => 'x', verify: async () => true },
       tokenIssuer: neverIssues,
     });

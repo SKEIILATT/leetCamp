@@ -16,6 +16,12 @@ export interface UserRepository {
    * instead of every adapter re-implementing the same `.toLowerCase()`. */
   findByEmail(email: string): Promise<Result<User | null>>;
 
+  /** Added for the `attempts` vertical: `submitAttempt` needs the caller's
+   * `timezone` to compute their LOCAL calendar date for the streak — that
+   * field is never in the JWT or `RequestIdentity`, on purpose (see
+   * `RequestIdentity`), so it has to be read from here. */
+  findById(id: string): Promise<Result<User | null>>;
+
   /**
    * Creates the account. Fails with `CONFLICT` if the email is already taken
    * — checked again at the database's unique constraint, not only in the use

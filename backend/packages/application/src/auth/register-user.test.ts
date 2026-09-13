@@ -41,6 +41,7 @@ const existingUser: User = {
 function fakeRepository(overrides: Partial<UserRepository> = {}): UserRepository {
   return {
     findByEmail: async () => ok(null),
+    findById: async () => ok(null),
     create: async (user: NewUser & { id: string; createdAt: Date }) =>
       ok({ ...user, isActive: true }),
     ...overrides,

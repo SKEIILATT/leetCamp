@@ -81,6 +81,8 @@ model User {
   deletedAt DateTime? @map("deleted_at")
 
   createdChallenges Challenge[]
+  attempts          Attempt[]
+  streak            Streak?
 
   @@index([subject])
   @@map("users")
@@ -157,6 +159,51 @@ model DailyChallenge {
   /// but the constraint is cheap insurance against one landing later without
   /// this exact question being asked.
   challenge Challenge @relation(fields: [challengeId], references: [id])
+  attempts  Attempt[]
 
   @@map("daily_challenges")
+}
+
+/// One submission, one (user, day) pair — the `@@unique` below is what the
+/// business rule "one attempt per day, locked after submit" actually rests
+/// on. `submitAttempt` pre-checks it for a friendlier error; this constraint
+/// is what makes the race between two concurrent submits impossible, not just
+/// unlikely.
+model Attempt {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  dailyChallengeDate DateTime @map("daily_challenge_date") @db.Date
+
+  answer           String
+  isCorrect        Boolean @map("is_correct")
+  submittedAt      DateTime @map("submitted_at")
+  /// `submittedAt` minus `DailyChallenge.publishedAt`, in seconds. Stored, not
+  /// recomputed on read — see the domain entity's header comment.
+  timeTakenSeconds Int      @map("time_taken_seconds")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user           User           @relation(fields: [userId], references: [id])
+  dailyChallenge DailyChallenge @relation(fields: [dailyChallengeDate], references: [date])
+
+  @@unique([userId, dailyChallengeDate])
+  @@map("attempts")
+}
+
+/// One row per user. `lastAttemptDate` is the user's OWN local calendar date
+/// (via `formatCalendarDate(instant, user.timezone)`), NOT
+/// `Attempt.dailyChallengeDate` (which is the global UTC day) — see the
+/// domain entity's header comment for why the two can legitimately differ.
+model Streak {
+  userId String @id @map("user_id") @db.Uuid
+
+  currentStreak   Int      @default(0) @map("current_streak")
+  longestStreak   Int      @default(0) @map("longest_streak")
+  lastAttemptDate DateTime @map("last_attempt_date") @db.Date
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("streaks")
 }

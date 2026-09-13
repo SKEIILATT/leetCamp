@@ -17,11 +17,17 @@ import type {
   TokenVerifier,
   UserAuthorizationRepository,
 } from '@leetcamp/domain';
-import type { AuthUseCases, ChallengesUseCases, DailyChallengesUseCases } from '@leetcamp/application';
+import type {
+  AttemptsUseCases,
+  AuthUseCases,
+  ChallengesUseCases,
+  DailyChallengesUseCases,
+} from '@leetcamp/application';
 
 import { loggerOptionsFor } from '../../shared/logger.js';
 import { authPlugin } from './plugins/auth.plugin.js';
 import { registerAdminChallengeRoutes } from './routes/admin-challenges.route.js';
+import { registerAttemptsRoutes } from './routes/attempts.route.js';
 import { registerAuthRoutes } from './routes/auth.route.js';
 import { registerDailyChallengeRoutes } from './routes/daily-challenge.route.js';
 import { registerHealthRoutes } from './routes/health.route.js';
@@ -79,6 +85,7 @@ export interface HttpAppDeps {
   readonly authUseCases: AuthUseCases;
   readonly challengesUseCases: ChallengesUseCases;
   readonly dailyChallengesUseCases: DailyChallengesUseCases;
+  readonly attemptsUseCases: AttemptsUseCases;
 }
 
 /**
@@ -273,6 +280,7 @@ export async function buildHttpApp(deps: HttpAppDeps): Promise<FastifyInstance> 
   registerAuthRoutes(app, deps.authUseCases);
   registerAdminChallengeRoutes(app, deps.challengesUseCases);
   registerDailyChallengeRoutes(app, deps.dailyChallengesUseCases);
+  registerAttemptsRoutes(app, deps.attemptsUseCases);
   registerMeRoutes(app);
 
   // 8) The spec endpoint, GATED: never available in production.

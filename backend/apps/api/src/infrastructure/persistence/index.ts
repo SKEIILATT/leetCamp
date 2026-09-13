@@ -8,10 +8,12 @@
  * without a database and every stub-based test is one refactor away from
  * needing Postgres.
  */
+export * from './prisma-attempt-repository.js';
 export * from './prisma-catalog-repository.js';
 export * from './prisma-challenge-repository.js';
 export * from './prisma-client.js';
 export * from './prisma-daily-challenge-repository.js';
+export * from './prisma-streak-repository.js';
 export * from './prisma-user-authorization-repository.js';
 export * from './prisma-user-repository.js';
 export * from './type-mappers.js';

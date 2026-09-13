@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  buildAttemptsUseCases,
   buildAuthUseCases,
   buildChallengesUseCases,
   buildDailyChallengesUseCases,
@@ -13,15 +14,18 @@ import { createJwtTokenService, createScryptPasswordHasher } from './infrastruct
 import { createSystemClock } from './infrastructure/clock/index.js';
 import { createUuidGenerator } from './infrastructure/id/index.js';
 import {
+  createPrismaAttemptRepository,
   createPrismaCategoryRepository,
   createPrismaChallengeRepository,
   createPrismaClient,
   createPrismaDailyChallengeRepository,
   createPrismaDatabaseHealthProbe,
   createPrismaDifficultyRepository,
+  createPrismaStreakRepository,
   createPrismaUserAuthorizationRepository,
   createPrismaUserRepository,
 } from './infrastructure/persistence/index.js';
+import { createPredictionValidationEngine } from './infrastructure/validation/index.js';
 import {
   createInProcessScheduler,
   registerSchedulerJobs,
@@ -107,8 +111,10 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   const userRepository = createPrismaUserAuthorizationRepository(prisma, log);
   const databaseProbe = createPrismaDatabaseHealthProbe(prisma, log);
 
+  const userRepositoryForAuth = createPrismaUserRepository(prisma, log);
+
   const authUseCases = buildAuthUseCases({
-    userRepository: createPrismaUserRepository(prisma, log),
+    userRepository: userRepositoryForAuth,
     passwordHasher,
     tokenIssuer: jwtTokenService,
     idGenerator,
@@ -125,13 +131,26 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     clock: createSystemClock(),
   });
 
+  const dailyChallengeRepository = createPrismaDailyChallengeRepository(prisma, log);
+
   // `timeZone: 'UTC'` here is the GLOBAL reference for "what day is it" for
-  // the single reto del día — see the note on `GetTodayChallengeDeps`. Not
-  // the same clock concern as a per-user streak cutoff, which does not exist
-  // yet.
+  // the single reto del día — see the note on `GetTodayChallengeDeps`. A
+  // SEPARATE concern from the per-user streak cutoff below, which reads each
+  // student's own `timezone` from the database instead.
   const dailyChallengesUseCases = buildDailyChallengesUseCases({
-    dailyChallengeRepository: createPrismaDailyChallengeRepository(prisma, log),
+    dailyChallengeRepository,
     challengeRepository,
+    clock: createSystemClock('UTC'),
+  });
+
+  const attemptsUseCases = buildAttemptsUseCases({
+    attemptRepository: createPrismaAttemptRepository(prisma, log),
+    streakRepository: createPrismaStreakRepository(prisma, log),
+    dailyChallengeRepository,
+    challengeRepository,
+    userRepository: userRepositoryForAuth,
+    validationEngine: createPredictionValidationEngine(),
+    idGenerator,
     clock: createSystemClock('UTC'),
   });
 
@@ -159,6 +178,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     authUseCases,
     challengesUseCases,
     dailyChallengesUseCases,
+    attemptsUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,

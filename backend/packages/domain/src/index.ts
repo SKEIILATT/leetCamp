@@ -31,6 +31,7 @@ export * from './ports/id-generator.js';
 export * from './ports/password-hasher.js';
 export * from './ports/token-issuer.js';
 export * from './ports/token-verifier.js';
+export * from './ports/validation-engine.js';
 
 // Consumed by the readiness route, which belongs to no domain — same reason as
 // the authorization port.
