@@ -1,0 +1,77 @@
+:host {
+  display: block;
+}
+
+.rk-status {
+  color: var(--lc-ink);
+  font-family: var(--lc-font-body);
+}
+
+.rk-card {
+  background: var(--lc-white);
+  border: 3px solid var(--lc-ink);
+  border-radius: 14px;
+  box-shadow: 8px 8px 0 var(--lc-ink);
+  padding: 20px 24px;
+  max-width: 560px;
+  box-sizing: border-box;
+  color: var(--lc-ink);
+
+  p {
+    margin: 0;
+  }
+}
+
+.rk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rk-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+
+  &--me {
+    background: var(--lc-mint);
+    border-color: var(--lc-ink);
+    font-weight: 700;
+  }
+}
+
+.rk-row__pos {
+  width: 28px;
+  flex-shrink: 0;
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  text-align: center;
+}
+
+.rk-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rk-row__streak {
+  font-family: var(--lc-font-mono);
+  font-size: 0.85rem;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.rk-row__points {
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  min-width: 64px;
+  text-align: right;
+}

@@ -1,0 +1,39 @@
+@if (state() === 'loading') {
+  <p class="rk-status">Cargando el ranking…</p>
+} @else if (state() === 'error') {
+  <div class="rk-card">
+    <p>No pudimos cargar el ranking. Intenta de nuevo más tarde.</p>
+  </div>
+} @else if (state() === 'empty') {
+  <div class="rk-card">
+    <p>Todavía nadie tiene puntos — sé el primero en resolver el reto de hoy.</p>
+  </div>
+} @else {
+  <div class="rk-card">
+    <div class="rk-list">
+      @for (entry of entries(); track entry.userId) {
+        <div class="rk-row" [class.rk-row--me]="entry.userId === myUserId()">
+          <span class="rk-row__pos">
+            @switch (entry.position) {
+              @case (1) {
+                🥇
+              }
+              @case (2) {
+                🥈
+              }
+              @case (3) {
+                🥉
+              }
+              @default {
+                {{ entry.position }}
+              }
+            }
+          </span>
+          <span class="rk-row__name">{{ entry.displayName }}</span>
+          <span class="rk-row__streak">🔥 {{ entry.currentStreak }}</span>
+          <span class="rk-row__points">{{ entry.totalPoints }} pts</span>
+        </div>
+      }
+    </div>
+  </div>
+}

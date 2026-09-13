@@ -5,6 +5,7 @@ import { Login } from './features/auth/login/login';
 import { Register } from './features/auth/register/register';
 import { DailyChallenge } from './features/daily-challenge/daily-challenge';
 import { History } from './features/history/history';
+import { Ranking } from './features/ranking/ranking';
 import { Shell } from './features/shell/shell';
 
 export const routes: Routes = [
@@ -17,6 +18,7 @@ export const routes: Routes = [
     children: [
       { path: 'reto', component: DailyChallenge },
       { path: 'historial', component: History },
+      { path: 'ranking', component: Ranking },
       { path: '', redirectTo: 'reto', pathMatch: 'full' },
     ],
   },
