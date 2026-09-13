@@ -6,11 +6,11 @@
 
     <div class="shell__stats">
       <div class="stat">
-        <span class="stat__value">{{ currentStreak() }}</span>
+        <span class="stat__value">{{ streakService.streak()?.currentStreak ?? 0 }}</span>
         <span class="stat__label">🔥 Días de racha</span>
       </div>
       <div class="stat">
-        <span class="stat__value">{{ totalPoints() }}</span>
+        <span class="stat__value">{{ streakService.streak()?.totalPoints ?? 0 }}</span>
         <span class="stat__label">Puntos</span>
       </div>
     </div>

@@ -1,0 +1,33 @@
+@if (state() === 'loading') {
+  <p class="dc-status">Cargando el reto de hoy…</p>
+} @else if (state() === 'no-challenge') {
+  <div class="dc-card">
+    <p>{{ errorMessage() ?? 'No hay reto programado para hoy. Vuelve mañana.' }}</p>
+  </div>
+} @else if (challenge(); as c) {
+  <div class="dc-card">
+    <h1>{{ c.title }}</h1>
+    <p class="dc-prompt">{{ c.promptMarkdown }}</p>
+    <pre class="dc-code">{{ c.codeSnippet }}</pre>
+
+    @if (state() === 'result' && result(); as r) {
+      @if (r.isCorrect) {
+        <p class="dc-result dc-result--ok">✓ ¡Correcto! Ganaste {{ r.pointsEarned }} puntos.</p>
+      } @else {
+        <p class="dc-result dc-result--fail">✗ No era la respuesta correcta. Sigue así, vuelve mañana.</p>
+      }
+      <p class="dc-result-meta">Racha actual: {{ r.currentStreak }} días · Puntos totales: {{ r.totalPoints }}</p>
+    } @else {
+      @if (errorMessage()) {
+        <p class="dc-error">{{ errorMessage() }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dc-form" novalidate>
+        <input type="text" formControlName="answer" placeholder="Tu respuesta…" autocomplete="off" />
+        <button type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Enviando…' : 'Enviar' }}
+        </button>
+      </form>
+    }
+  </div>
+}
