@@ -180,6 +180,16 @@ model Attempt {
   /// `submittedAt` minus `DailyChallenge.publishedAt`, in seconds. Stored, not
   /// recomputed on read — see the domain entity's header comment.
   timeTakenSeconds Int      @map("time_taken_seconds")
+  /// From `calculatePoints` — frozen at submission time against that day's
+  /// difficulty level and timing. Never recomputed on read; see the domain
+  /// entity's header comment on why (an admin editing a difficulty later
+  /// must not rewrite history).
+  ///
+  /// `@default(0)` exists ONLY so this migration does not fail against rows
+  /// created before this column existed (from earlier manual testing) — the
+  /// application always supplies a real, computed value; nothing relies on
+  /// the default going forward.
+  points           Int      @default(0)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -200,6 +210,10 @@ model Streak {
   currentStreak   Int      @default(0) @map("current_streak")
   longestStreak   Int      @default(0) @map("longest_streak")
   lastAttemptDate DateTime @map("last_attempt_date") @db.Date
+  /// Accumulated across every correct attempt, ever. Lives on this same row
+  /// rather than a separate `Ranking` table — see the domain entity's header
+  /// comment for why.
+  totalPoints     Int      @default(0) @map("total_points")
 
   updatedAt DateTime @updatedAt @map("updated_at")
 

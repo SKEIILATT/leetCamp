@@ -10,18 +10,47 @@ import type { Result } from '../result.js';
  * SAME global challenge and have it land on different local dates for their
  * own streak bookkeeping, and that is correct, not a bug — see the note on
  * why there is deliberately no grace period.
+ *
+ * `totalPoints` LIVES ON THIS SAME ROW, not a separate `Ranking` table — it is
+ * updated by the exact same event (`submitAttempt`), at the exact same
+ * instant, as `currentStreak`. Splitting them would mean two upserts per
+ * attempt instead of one, buying no isolation: nothing ever reads one without
+ * needing to know it changed alongside the other. The ranking (`RankingEntry`
+ * below) reads this same table sorted by `totalPoints`, it does not maintain
+ * its own copy.
  */
 export interface Streak {
   readonly userId: string;
   readonly currentStreak: number;
   readonly longestStreak: number;
   readonly lastAttemptDate: string;
+  readonly totalPoints: number;
+}
+
+/**
+ * One row of the leaderboard. `userId` is included so a client can find
+ * "where am I" in the list without a second request, but nothing about the
+ * account beyond `displayName` — the same reasoning as `PublicChallenge`:
+ * this is one student's view of OTHER students, not an admin view.
+ */
+export interface RankingEntry {
+  readonly userId: string;
+  readonly displayName: string;
+  readonly totalPoints: number;
+  readonly currentStreak: number;
 }
 
 export interface StreakRepository {
   findByUserId(userId: string): Promise<Result<Streak | null>>;
   /** Upsert — the first attempt a user ever makes has no prior row. */
   save(streak: Streak): Promise<Result<Streak>>;
+  /** Sorted by `totalPoints` descending. Position is NOT stored — it is
+   * derived by the caller from list order — because a stored rank number
+   * would need invalidating every time ANYONE ELSE's points change, and a
+   * sort over this project's scale (30-100 rows) costs nothing to redo on
+   * every read. See docs/DECISIONS.md's note on not recalculating the
+   * expensive part (the accumulation), which this is not. */
+  listRanked(): Promise<Result<readonly RankingEntry[]>>;
 }
 
 /**
@@ -40,22 +69,41 @@ export interface StreakRepository {
  *     stored one — e.g. writes applied out of order) → reset to 1. Never
  *     invents a decrease: `longestStreak` only ever goes up.
  *
+ * `pointsEarned` (from `calculatePoints` in `./scoring.js`) ALWAYS
+ * accumulates into `totalPoints`, independent of every branch above —
+ * points are never reset, never capped by the streak resetting. A student who
+ * breaks a 30-day streak keeps every point they already earned.
+ *
  * Pure and synchronous ON PURPOSE — the entire rule is testable with three
- * strings and no fakes, no ports, no clock. `submitAttempt` is what supplies
- * the already-resolved local date; this function makes no calendar decisions
- * of its own.
+ * strings and a number, no fakes, no ports, no clock. `submitAttempt` is what
+ * supplies the already-resolved local date and the already-computed points;
+ * this function makes no calendar or scoring decisions of its own.
  */
-export function applyAttempt(previous: Streak | null, userId: string, localDate: string): Streak {
+export function applyAttempt(
+  previous: Streak | null,
+  userId: string,
+  localDate: string,
+  pointsEarned: number,
+): Streak {
   if (previous === null) {
-    return { userId, currentStreak: 1, longestStreak: 1, lastAttemptDate: localDate };
+    return {
+      userId,
+      currentStreak: 1,
+      longestStreak: 1,
+      lastAttemptDate: localDate,
+      totalPoints: pointsEarned,
+    };
   }
 
+  const totalPoints = previous.totalPoints + pointsEarned;
   const diffDays = daysBetween(previous.lastAttemptDate, localDate);
 
   if (diffDays <= 0) {
-    // 0 = already recorded today (idempotent). Negative = a write landed out
-    // of order; never move the streak backwards over it.
-    return previous;
+    // 0 = already recorded today (idempotent for the streak fields) — but
+    // points from a SECOND challenge landing on the same local date (see the
+    // entity's header note) still count; only the streak counter is
+    // unaffected.
+    return { ...previous, totalPoints };
   }
 
   if (diffDays === 1) {
@@ -65,6 +113,7 @@ export function applyAttempt(previous: Streak | null, userId: string, localDate:
       currentStreak,
       longestStreak: Math.max(previous.longestStreak, currentStreak),
       lastAttemptDate: localDate,
+      totalPoints,
     };
   }
 
@@ -73,6 +122,7 @@ export function applyAttempt(previous: Streak | null, userId: string, localDate:
     currentStreak: 1,
     longestStreak: Math.max(previous.longestStreak, 1),
     lastAttemptDate: localDate,
+    totalPoints,
   };
 }
 

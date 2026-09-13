@@ -1,6 +1,7 @@
 import {
   alreadyAttempted,
   applyAttempt,
+  calculatePoints,
   err,
   formatCalendarDate,
   noDailyChallengeScheduled,
@@ -10,6 +11,7 @@ import {
   type ChallengeRepository,
   type Clock,
   type DailyChallengeRepository,
+  type DifficultyRepository,
   type IdGenerator,
   type Result,
   type StreakRepository,
@@ -22,6 +24,9 @@ export interface SubmitAttemptDeps {
   readonly streakRepository: StreakRepository;
   readonly dailyChallengeRepository: DailyChallengeRepository;
   readonly challengeRepository: ChallengeRepository;
+  /** Needed only for `calculatePoints`'s `difficultyLevel` input — see the
+   * note where it is read below. */
+  readonly difficultyRepository: DifficultyRepository;
   readonly userRepository: UserRepository;
   readonly validationEngine: ValidationEngine;
   readonly idGenerator: IdGenerator;
@@ -41,8 +46,10 @@ export interface SubmitAttemptInput {
 export interface SubmitAttemptOutput {
   readonly attemptId: string;
   readonly isCorrect: boolean;
+  readonly pointsEarned: number;
   readonly currentStreak: number;
   readonly longestStreak: number;
+  readonly totalPoints: number;
 }
 
 /**
@@ -92,11 +99,26 @@ export function makeSubmitAttempt(
       return err(repository('Authenticated user record is missing'));
     }
 
+    const difficulty = await deps.difficultyRepository.findById(challenge.value.difficultyId);
+    if (!difficulty.ok) return err(difficulty.error);
+    if (difficulty.value === null) {
+      // Same data-integrity reasoning as the missing-challenge branch above —
+      // the FK on `challenges.difficulty_id` makes this unreachable in
+      // practice.
+      return err(repository('Challenge references a missing difficulty'));
+    }
+
     const submittedAt = deps.clock.now();
     const timeTakenSeconds = Math.max(
       0,
       Math.round((submittedAt.getTime() - daily.value.publishedAt.getTime()) / 1000),
     );
+
+    const pointsEarned = calculatePoints({
+      isCorrect: validated.value.isCorrect,
+      difficultyLevel: difficulty.value.level,
+      timeTakenSeconds,
+    });
 
     const attempt = await deps.attemptRepository.create({
       id: deps.idGenerator.generate(),
@@ -106,6 +128,7 @@ export function makeSubmitAttempt(
       isCorrect: validated.value.isCorrect,
       submittedAt,
       timeTakenSeconds,
+      points: pointsEarned,
     });
     if (!attempt.ok) return err(attempt.error);
 
@@ -117,7 +140,7 @@ export function makeSubmitAttempt(
     const previousStreak = await deps.streakRepository.findByUserId(input.userId);
     if (!previousStreak.ok) return err(previousStreak.error);
 
-    const nextStreak = applyAttempt(previousStreak.value, input.userId, localDate);
+    const nextStreak = applyAttempt(previousStreak.value, input.userId, localDate, pointsEarned);
 
     const savedStreak = await deps.streakRepository.save(nextStreak);
     if (!savedStreak.ok) return err(savedStreak.error);
@@ -125,8 +148,10 @@ export function makeSubmitAttempt(
     return ok({
       attemptId: attempt.value.id,
       isCorrect: attempt.value.isCorrect,
+      pointsEarned,
       currentStreak: savedStreak.value.currentStreak,
       longestStreak: savedStreak.value.longestStreak,
+      totalPoints: savedStreak.value.totalPoints,
     });
   };
 }

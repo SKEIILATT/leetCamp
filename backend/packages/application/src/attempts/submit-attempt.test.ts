@@ -11,6 +11,8 @@ import {
   type Clock,
   type DailyChallenge,
   type DailyChallengeRepository,
+  type Difficulty,
+  type DifficultyRepository,
   type StreakRepository,
   type User,
   type UserRepository,
@@ -42,6 +44,13 @@ const challenge: Challenge = {
   updatedAt: new Date('2026-01-01T00:00:00Z'),
 };
 
+const difficulty: Difficulty = {
+  id: 'diff-1',
+  name: 'Medium',
+  level: 2,
+  createdAt: new Date('2026-01-01T00:00:00Z'),
+};
+
 const student: User = {
   id: 'user-1',
   email: 'student@example.com',
@@ -58,6 +67,7 @@ function deps(overrides: {
   streakRepository?: Partial<StreakRepository>;
   dailyChallengeRepository?: Partial<DailyChallengeRepository>;
   challengeRepository?: Partial<ChallengeRepository>;
+  difficultyRepository?: Partial<DifficultyRepository>;
   userRepository?: Partial<UserRepository>;
   validationEngine?: Partial<ValidationEngine>;
   clock?: Clock;
@@ -71,6 +81,7 @@ function deps(overrides: {
   const streakRepository: StreakRepository = {
     findByUserId: async () => ok(null),
     save: async (s) => ok(s),
+    listRanked: async () => ok([]),
     ...overrides.streakRepository,
   };
   const dailyChallengeRepository: DailyChallengeRepository = {
@@ -85,6 +96,13 @@ function deps(overrides: {
     create: async () => ok(challenge),
     updateStatus: async () => ok(challenge),
     ...overrides.challengeRepository,
+  };
+  const difficultyRepository: DifficultyRepository = {
+    findById: async () => ok(difficulty),
+    findByName: async () => ok(null),
+    list: async () => ok([difficulty]),
+    create: async () => ok(difficulty),
+    ...overrides.difficultyRepository,
   };
   const userRepository: UserRepository = {
     findByEmail: async () => ok(student),
@@ -104,6 +122,7 @@ function deps(overrides: {
     streakRepository,
     dailyChallengeRepository,
     challengeRepository,
+    difficultyRepository,
     userRepository,
     validationEngine,
     idGenerator: { generate: () => 'attempt-1' },
@@ -122,6 +141,10 @@ describe('submitAttempt', () => {
     expect(result.value.isCorrect).toBe(true);
     expect(result.value.currentStreak).toBe(1);
     expect(result.value.longestStreak).toBe(1);
+    // difficulty level 2 * 10 = 20 base; 8 hours elapsed, past every speed
+    // bonus tier, so +0.
+    expect(result.value.pointsEarned).toBe(20);
+    expect(result.value.totalPoints).toBe(20);
   });
 
   it('still records a WRONG answer and still updates the streak — participation, not correctness', async () => {
@@ -151,6 +174,7 @@ describe('submitAttempt', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error('unreachable');
     expect(result.value.isCorrect).toBe(false);
+    expect(result.value.pointsEarned).toBe(0);
     expect(attemptCreated).toBe(true);
     expect(streakSaved).toBe(true);
   });
@@ -180,6 +204,31 @@ describe('submitAttempt', () => {
     await submitAttempt({ userId: student.id, answer: '42' });
 
     expect(localDateUsed).toBe('2026-03-16');
+  });
+
+  it('awards the fast speed bonus when answered within 5 minutes of publishing', async () => {
+    const fastClock: Clock = { now: () => new Date('2026-03-15T00:02:00Z'), timeZone: 'UTC' };
+
+    const submitAttempt = makeSubmitAttempt(deps({ clock: fastClock }));
+
+    const result = await submitAttempt({ userId: student.id, answer: '42' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('unreachable');
+    // base 20 + fast bonus 10.
+    expect(result.value.pointsEarned).toBe(30);
+  });
+
+  it('propagates a repository failure from the difficulty lookup', async () => {
+    const submitAttempt = makeSubmitAttempt(
+      deps({ difficultyRepository: { findById: async () => err(repository('connection refused')) } }),
+    );
+
+    const result = await submitAttempt({ userId: student.id, answer: '42' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.error.code).toBe('REPOSITORY');
   });
 
   it('rejects when nothing is scheduled today, without creating an attempt', async () => {
@@ -214,6 +263,7 @@ describe('submitAttempt', () => {
       isCorrect: true,
       submittedAt: new Date('2026-03-15T01:00:00Z'),
       timeTakenSeconds: 3600,
+      points: 20,
     };
     let validated = false;
 

@@ -21,6 +21,11 @@ export interface Attempt {
    * bonus input per docs/DECISIONS.md. Computed once at submission time, not
    * derived on read, so it never changes under a later query. */
   readonly timeTakenSeconds: number;
+  /** From `calculatePoints` in `./scoring.js`, computed ONCE at submission
+   * time against the difficulty level and timing AS THEY WERE THAT DAY —
+   * never recomputed on read. If it were, an admin editing a difficulty's
+   * `level` later would silently rewrite everyone's past scores. */
+  readonly points: number;
 }
 
 export interface NewAttempt {
@@ -30,6 +35,7 @@ export interface NewAttempt {
   readonly isCorrect: boolean;
   readonly submittedAt: Date;
   readonly timeTakenSeconds: number;
+  readonly points: number;
 }
 
 export interface AttemptRepository {

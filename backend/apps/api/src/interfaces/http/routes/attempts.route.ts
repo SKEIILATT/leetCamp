@@ -9,6 +9,7 @@ const StreakSchema = z.object({
   currentStreak: z.number().int(),
   longestStreak: z.number().int(),
   lastAttemptDate: z.iso.date().nullable(),
+  totalPoints: z.number().int(),
 });
 
 const AttemptSchema = z.object({
@@ -18,6 +19,7 @@ const AttemptSchema = z.object({
   isCorrect: z.boolean(),
   submittedAt: z.iso.datetime(),
   timeTakenSeconds: z.number().int(),
+  points: z.number().int(),
 });
 
 /**
@@ -43,8 +45,10 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
           201: z.object({
             attemptId: z.string(),
             isCorrect: z.boolean(),
+            pointsEarned: z.number().int(),
             currentStreak: z.number().int(),
             longestStreak: z.number().int(),
+            totalPoints: z.number().int(),
           }),
           404: ErrorResponseSchema,
           409: ErrorResponseSchema,
@@ -89,12 +93,13 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
       if (result.value === null) {
         return reply
           .status(200)
-          .send({ currentStreak: 0, longestStreak: 0, lastAttemptDate: null });
+          .send({ currentStreak: 0, longestStreak: 0, lastAttemptDate: null, totalPoints: 0 });
       }
       return reply.status(200).send({
         currentStreak: result.value.currentStreak,
         longestStreak: result.value.longestStreak,
         lastAttemptDate: result.value.lastAttemptDate,
+        totalPoints: result.value.totalPoints,
       });
     },
   );
@@ -124,6 +129,7 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
           isCorrect: attempt.isCorrect,
           submittedAt: attempt.submittedAt.toISOString(),
           timeTakenSeconds: attempt.timeTakenSeconds,
+          points: attempt.points,
         })),
       );
     },

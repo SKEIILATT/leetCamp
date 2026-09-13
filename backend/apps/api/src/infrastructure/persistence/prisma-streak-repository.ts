@@ -1,4 +1,12 @@
-import { err, ok, repository, type Result, type Streak, type StreakRepository } from '@leetcamp/domain';
+import {
+  err,
+  ok,
+  repository,
+  type RankingEntry,
+  type Result,
+  type Streak,
+  type StreakRepository,
+} from '@leetcamp/domain';
 
 import { fromDateColumn, toDateColumn } from './calendar-date-column.js';
 import type { PrismaClient } from './prisma-client.js';
@@ -8,12 +16,14 @@ function toDomain(row: {
   currentStreak: number;
   longestStreak: number;
   lastAttemptDate: Date;
+  totalPoints: number;
 }): Streak {
   return {
     userId: row.userId,
     currentStreak: row.currentStreak,
     longestStreak: row.longestStreak,
     lastAttemptDate: fromDateColumn(row.lastAttemptDate),
+    totalPoints: row.totalPoints,
   };
 }
 
@@ -38,6 +48,7 @@ export function createPrismaStreakRepository(
           currentStreak: streak.currentStreak,
           longestStreak: streak.longestStreak,
           lastAttemptDate: toDateColumn(streak.lastAttemptDate),
+          totalPoints: streak.totalPoints,
         };
         // Upsert: the first attempt a user ever makes has no prior row —
         // `applyAttempt` in @leetcamp/domain already computed the full next
@@ -51,6 +62,35 @@ export function createPrismaStreakRepository(
       } catch (error) {
         logger?.error({ err: error }, 'failed to save the streak');
         return err(repository('Could not save the streak'));
+      }
+    },
+
+    async listRanked(): Promise<Result<readonly RankingEntry[]>> {
+      try {
+        // The join lives HERE, not in the domain — `RankingEntry` needs
+        // `displayName`, which is on `User`, not `Streak`. Only students with
+        // an attempt (a `Streak` row exists) appear at all; someone who has
+        // never attempted has nothing to rank.
+        const rows = await prisma.streak.findMany({
+          orderBy: { totalPoints: 'desc' },
+          select: {
+            userId: true,
+            totalPoints: true,
+            currentStreak: true,
+            user: { select: { displayName: true } },
+          },
+        });
+        return ok(
+          rows.map((row) => ({
+            userId: row.userId,
+            displayName: row.user.displayName,
+            totalPoints: row.totalPoints,
+            currentStreak: row.currentStreak,
+          })),
+        );
+      } catch (error) {
+        logger?.error({ err: error }, 'failed to list the ranking');
+        return err(repository('Could not list the ranking'));
       }
     },
   };

@@ -3,6 +3,7 @@ import type {
   ChallengeRepository,
   Clock,
   DailyChallengeRepository,
+  DifficultyRepository,
   IdGenerator,
   StreakRepository,
   UserRepository,
@@ -26,6 +27,7 @@ export interface AttemptsDeps {
   readonly streakRepository: StreakRepository;
   readonly dailyChallengeRepository: DailyChallengeRepository;
   readonly challengeRepository: ChallengeRepository;
+  readonly difficultyRepository: DifficultyRepository;
   readonly userRepository: UserRepository;
   readonly validationEngine: ValidationEngine;
   readonly idGenerator: IdGenerator;

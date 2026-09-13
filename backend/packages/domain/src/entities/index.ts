@@ -27,6 +27,7 @@ export * from './challenge-errors.js';
 export * from './challenge-repository.js';
 export * from './daily-challenge.js';
 export * from './daily-challenge-errors.js';
+export * from './scoring.js';
 export * from './streak.js';
 export * from './user.js';
 export * from './user-errors.js';

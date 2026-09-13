@@ -18,4 +18,5 @@ export * from './attempts/index.js';
 export * from './auth/index.js';
 export * from './challenges/index.js';
 export * from './daily-challenges/index.js';
+export * from './ranking/index.js';
 export * from './system/index.js';

@@ -19,6 +19,7 @@ function toDomain(row: {
   isCorrect: boolean;
   submittedAt: Date;
   timeTakenSeconds: number;
+  points: number;
 }): Attempt {
   return {
     id: row.id,
@@ -28,6 +29,7 @@ function toDomain(row: {
     isCorrect: row.isCorrect,
     submittedAt: row.submittedAt,
     timeTakenSeconds: row.timeTakenSeconds,
+    points: row.points,
   };
 }
 
@@ -74,6 +76,7 @@ export function createPrismaAttemptRepository(
             isCorrect: attempt.isCorrect,
             submittedAt: attempt.submittedAt,
             timeTakenSeconds: attempt.timeTakenSeconds,
+            points: attempt.points,
           },
         });
         return ok(toDomain(row));

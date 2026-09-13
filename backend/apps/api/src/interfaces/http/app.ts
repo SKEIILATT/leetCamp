@@ -23,6 +23,7 @@ import type {
   AuthUseCases,
   ChallengesUseCases,
   DailyChallengesUseCases,
+  RankingUseCases,
 } from '@leetcamp/application';
 
 import { loggerOptionsFor } from '../../shared/logger.js';
@@ -34,6 +35,7 @@ import { registerAuthRoutes } from './routes/auth.route.js';
 import { registerDailyChallengeRoutes } from './routes/daily-challenge.route.js';
 import { registerHealthRoutes } from './routes/health.route.js';
 import { registerMeRoutes } from './routes/me.route.js';
+import { registerRankingRoutes } from './routes/ranking.route.js';
 
 export interface HttpAppConfig {
   readonly nodeEnv: 'development' | 'test' | 'production';
@@ -89,6 +91,7 @@ export interface HttpAppDeps {
   readonly dailyChallengesUseCases: DailyChallengesUseCases;
   readonly attemptsUseCases: AttemptsUseCases;
   readonly adminUsersUseCases: AdminUsersUseCases;
+  readonly rankingUseCases: RankingUseCases;
 }
 
 /**
@@ -285,6 +288,7 @@ export async function buildHttpApp(deps: HttpAppDeps): Promise<FastifyInstance> 
   registerDailyChallengeRoutes(app, deps.dailyChallengesUseCases);
   registerAttemptsRoutes(app, deps.attemptsUseCases);
   registerAdminUsersRoutes(app, deps.adminUsersUseCases);
+  registerRankingRoutes(app, deps.rankingUseCases);
   registerMeRoutes(app);
 
   // 8) The spec endpoint, GATED: never available in production.

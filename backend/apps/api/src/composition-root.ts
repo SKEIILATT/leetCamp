@@ -5,6 +5,7 @@ import {
   buildAuthUseCases,
   buildChallengesUseCases,
   buildDailyChallengesUseCases,
+  buildRankingUseCases,
   buildSystemUseCases,
 } from '@leetcamp/application';
 
@@ -123,11 +124,12 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   });
 
   const challengeRepository = createPrismaChallengeRepository(prisma, log);
+  const difficultyRepository = createPrismaDifficultyRepository(prisma, log);
 
   const challengesUseCases = buildChallengesUseCases({
     challengeRepository,
     categoryRepository: createPrismaCategoryRepository(prisma, log),
-    difficultyRepository: createPrismaDifficultyRepository(prisma, log),
+    difficultyRepository,
     idGenerator,
     clock: createSystemClock(),
   });
@@ -144,11 +146,14 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     clock: createSystemClock('UTC'),
   });
 
+  const streakRepository = createPrismaStreakRepository(prisma, log);
+
   const attemptsUseCases = buildAttemptsUseCases({
     attemptRepository: createPrismaAttemptRepository(prisma, log),
-    streakRepository: createPrismaStreakRepository(prisma, log),
+    streakRepository,
     dailyChallengeRepository,
     challengeRepository,
+    difficultyRepository,
     userRepository: userRepositoryForAuth,
     validationEngine: createPredictionValidationEngine(),
     idGenerator,
@@ -158,6 +163,8 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   const adminUsersUseCases = buildAdminUsersUseCases({
     userRepository: userRepositoryForAuth,
   });
+
+  const rankingUseCases = buildRankingUseCases({ streakRepository });
 
   // ── Scheduler ──────────────────────────────────────────────────────────────
   //
@@ -185,6 +192,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     dailyChallengesUseCases,
     attemptsUseCases,
     adminUsersUseCases,
+    rankingUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,
