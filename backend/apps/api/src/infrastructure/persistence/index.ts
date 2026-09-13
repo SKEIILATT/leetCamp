@@ -11,6 +11,7 @@
 export * from './prisma-catalog-repository.js';
 export * from './prisma-challenge-repository.js';
 export * from './prisma-client.js';
+export * from './prisma-daily-challenge-repository.js';
 export * from './prisma-user-authorization-repository.js';
 export * from './prisma-user-repository.js';
 export * from './type-mappers.js';

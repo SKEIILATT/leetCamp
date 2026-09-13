@@ -14,6 +14,7 @@
  * alongside its entities. The ports that ARE here are cross-cutting — consumed
  * by the HTTP layer itself, not by any single business domain.
  */
+export * from './calendar.js';
 export * from './errors.js';
 export * from './result.js';
 

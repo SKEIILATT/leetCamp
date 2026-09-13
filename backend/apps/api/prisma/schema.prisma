@@ -138,6 +138,25 @@ model Challenge {
   difficulty Difficulty @relation(fields: [difficultyId], references: [id])
   creator    User       @relation(fields: [createdBy], references: [id])
 
+  dailyChallenges DailyChallenge[]
+
   @@index([status])
   @@map("challenges")
+}
+
+/// The single global reto del día. `date` is a pure calendar date (no
+/// time-of-day, no time zone of its own) — see the domain entity's header
+/// comment on `@db.Date` and the round-trip through the adapter.
+model DailyChallenge {
+  date        DateTime @id @db.Date
+  challengeId String   @map("challenge_id") @db.Uuid
+  publishedAt DateTime @map("published_at")
+
+  /// `RESTRICT`: a challenge that is somebody's reto del día can never be
+  /// deleted out from under it. There is no delete-challenge operation today,
+  /// but the constraint is cheap insurance against one landing later without
+  /// this exact question being asked.
+  challenge Challenge @relation(fields: [challengeId], references: [id])
+
+  @@map("daily_challenges")
 }

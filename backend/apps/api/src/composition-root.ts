@@ -1,5 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { buildAuthUseCases, buildChallengesUseCases, buildSystemUseCases } from '@leetcamp/application';
+import {
+  buildAuthUseCases,
+  buildChallengesUseCases,
+  buildDailyChallengesUseCases,
+  buildSystemUseCases,
+} from '@leetcamp/application';
 
 import type { Env } from './shared/config/env.js';
 import { API_VERSION } from './shared/version.js';
@@ -11,6 +16,7 @@ import {
   createPrismaCategoryRepository,
   createPrismaChallengeRepository,
   createPrismaClient,
+  createPrismaDailyChallengeRepository,
   createPrismaDatabaseHealthProbe,
   createPrismaDifficultyRepository,
   createPrismaUserAuthorizationRepository,
@@ -109,12 +115,24 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     clock: createSystemClock(),
   });
 
+  const challengeRepository = createPrismaChallengeRepository(prisma, log);
+
   const challengesUseCases = buildChallengesUseCases({
-    challengeRepository: createPrismaChallengeRepository(prisma, log),
+    challengeRepository,
     categoryRepository: createPrismaCategoryRepository(prisma, log),
     difficultyRepository: createPrismaDifficultyRepository(prisma, log),
     idGenerator,
     clock: createSystemClock(),
+  });
+
+  // `timeZone: 'UTC'` here is the GLOBAL reference for "what day is it" for
+  // the single reto del día — see the note on `GetTodayChallengeDeps`. Not
+  // the same clock concern as a per-user streak cutoff, which does not exist
+  // yet.
+  const dailyChallengesUseCases = buildDailyChallengesUseCases({
+    dailyChallengeRepository: createPrismaDailyChallengeRepository(prisma, log),
+    challengeRepository,
+    clock: createSystemClock('UTC'),
   });
 
   // ── Scheduler ──────────────────────────────────────────────────────────────
@@ -140,6 +158,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     scheduler,
     authUseCases,
     challengesUseCases,
+    dailyChallengesUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,

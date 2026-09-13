@@ -23,6 +23,8 @@ export * from './catalog-errors.js';
 export * from './challenge.js';
 export * from './challenge-errors.js';
 export * from './challenge-repository.js';
+export * from './daily-challenge.js';
+export * from './daily-challenge-errors.js';
 export * from './user.js';
 export * from './user-errors.js';
 export * from './user-repository.js';
