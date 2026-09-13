@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import {
+  buildAdminUsersUseCases,
   buildAttemptsUseCases,
   buildAuthUseCases,
   buildChallengesUseCases,
@@ -154,6 +155,10 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     clock: createSystemClock('UTC'),
   });
 
+  const adminUsersUseCases = buildAdminUsersUseCases({
+    userRepository: userRepositoryForAuth,
+  });
+
   // ── Scheduler ──────────────────────────────────────────────────────────────
   //
   // It does NOT start on construction: `start()` is called below, after the
@@ -179,6 +184,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     challengesUseCases,
     dailyChallengesUseCases,
     attemptsUseCases,
+    adminUsersUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,

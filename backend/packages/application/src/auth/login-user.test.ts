@@ -25,6 +25,10 @@ function fakeUserRepository(overrides: Partial<UserRepository> = {}): UserReposi
   return {
     findByEmail: async () => ok(activeUser),
     findById: async () => ok(activeUser),
+    list: async () => ok([activeUser]),
+    setActive: async () => {
+      throw new Error('loginUser must never change account status');
+    },
     create: async () => ok(activeUser),
     ...overrides,
   };

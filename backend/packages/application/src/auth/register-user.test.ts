@@ -42,6 +42,10 @@ function fakeRepository(overrides: Partial<UserRepository> = {}): UserRepository
   return {
     findByEmail: async () => ok(null),
     findById: async () => ok(null),
+    list: async () => ok([]),
+    setActive: async () => {
+      throw new Error('registerUser must never change account status');
+    },
     create: async (user: NewUser & { id: string; createdAt: Date }) =>
       ok({ ...user, isActive: true }),
     ...overrides,

@@ -1,4 +1,4 @@
-import { conflict, notFound, unauthenticated } from '../errors.js';
+import { conflict, forbidden, notFound, unauthenticated } from '../errors.js';
 
 /**
  * Per-aggregate error factories, built from the CLOSED catalogue in
@@ -20,3 +20,5 @@ export const emailAlreadyRegistered = (email: string) =>
 export const invalidCredentials = () => unauthenticated('Invalid email or password');
 
 export const userNotFound = (userId: string) => notFound(`User ${userId} not found`);
+
+export const cannotDeactivateSelf = () => forbidden('You cannot deactivate your own account');

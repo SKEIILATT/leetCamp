@@ -29,4 +29,18 @@ export interface UserRepository {
    * same email.
    */
   create(user: NewUser & { id: string; createdAt: Date }): Promise<Result<User>>;
+
+  /** Added for the `adminUsers` vertical. All accounts, no pagination — fine
+   * at this project's scale (30-100 students, see docs/DECISIONS.md);
+   * revisit before this matters at a bootcamp ten times the size. */
+  list(): Promise<Result<readonly User[]>>;
+
+  /** Flips `status` between `active`/`inactive`. Deactivating someone with a
+   * live session does not revoke their JWT (self-issued tokens cannot be
+   * revoked before they expire) — it takes effect on their NEXT
+   * authenticated request, where `UserAuthorizationRepository` finds no
+   * active profile and `resolveIdentity` answers 401. That is a real, if
+   * short, window — acceptable for this project's threat model, not
+   * something this port silently promises to close. */
+  setActive(id: string, isActive: boolean): Promise<Result<User>>;
 }

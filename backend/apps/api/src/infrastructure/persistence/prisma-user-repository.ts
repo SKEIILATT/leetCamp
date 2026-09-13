@@ -45,6 +45,32 @@ export function createPrismaUserRepository(
       }
     },
 
+    async list(): Promise<Result<readonly User[]>> {
+      try {
+        const rows = await prisma.user.findMany({
+          where: { deletedAt: null },
+          orderBy: { createdAt: 'asc' },
+        });
+        return ok(rows.map(toDomainUser));
+      } catch (error) {
+        logger?.error({ err: error }, 'failed to list users');
+        return err(repository('Could not list users'));
+      }
+    },
+
+    async setActive(id: string, isActive: boolean): Promise<Result<User>> {
+      try {
+        const row = await prisma.user.update({
+          where: { id },
+          data: { status: isActive ? 'active' : 'inactive' },
+        });
+        return ok(toDomainUser(row));
+      } catch (error) {
+        logger?.error({ err: error }, 'failed to update the user status');
+        return err(repository('Could not update the user'));
+      }
+    },
+
     async create(user: NewUser & { id: string; createdAt: Date }): Promise<Result<User>> {
       try {
         const row = await prisma.user.create({

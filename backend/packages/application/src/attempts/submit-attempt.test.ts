@@ -89,6 +89,8 @@ function deps(overrides: {
   const userRepository: UserRepository = {
     findByEmail: async () => ok(student),
     findById: async () => ok(student),
+    list: async () => ok([student]),
+    setActive: async () => ok(student),
     create: async () => ok(student),
     ...overrides.userRepository,
   };

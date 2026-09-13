@@ -18,6 +18,7 @@ import type {
   UserAuthorizationRepository,
 } from '@leetcamp/domain';
 import type {
+  AdminUsersUseCases,
   AttemptsUseCases,
   AuthUseCases,
   ChallengesUseCases,
@@ -27,6 +28,7 @@ import type {
 import { loggerOptionsFor } from '../../shared/logger.js';
 import { authPlugin } from './plugins/auth.plugin.js';
 import { registerAdminChallengeRoutes } from './routes/admin-challenges.route.js';
+import { registerAdminUsersRoutes } from './routes/admin-users.route.js';
 import { registerAttemptsRoutes } from './routes/attempts.route.js';
 import { registerAuthRoutes } from './routes/auth.route.js';
 import { registerDailyChallengeRoutes } from './routes/daily-challenge.route.js';
@@ -86,6 +88,7 @@ export interface HttpAppDeps {
   readonly challengesUseCases: ChallengesUseCases;
   readonly dailyChallengesUseCases: DailyChallengesUseCases;
   readonly attemptsUseCases: AttemptsUseCases;
+  readonly adminUsersUseCases: AdminUsersUseCases;
 }
 
 /**
@@ -281,6 +284,7 @@ export async function buildHttpApp(deps: HttpAppDeps): Promise<FastifyInstance> 
   registerAdminChallengeRoutes(app, deps.challengesUseCases);
   registerDailyChallengeRoutes(app, deps.dailyChallengesUseCases);
   registerAttemptsRoutes(app, deps.attemptsUseCases);
+  registerAdminUsersRoutes(app, deps.adminUsersUseCases);
   registerMeRoutes(app);
 
   // 8) The spec endpoint, GATED: never available in production.
