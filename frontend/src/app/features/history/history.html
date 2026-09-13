@@ -1,0 +1,28 @@
+@if (state() === 'loading') {
+  <p class="hs-status">Cargando tu historial…</p>
+} @else if (state() === 'error') {
+  <div class="hs-card">
+    <p>No pudimos cargar tu historial. Intenta de nuevo más tarde.</p>
+  </div>
+} @else if (state() === 'empty') {
+  <div class="hs-card">
+    <p>Aún no has respondido ningún reto. ¡Empieza con el de hoy!</p>
+  </div>
+} @else {
+  <div class="hs-list">
+    @for (attempt of attempts(); track attempt.id) {
+      <div class="hs-row" [class.hs-row--correct]="attempt.isCorrect" [class.hs-row--incorrect]="!attempt.isCorrect">
+        <div class="hs-row__top">
+          <span class="hs-row__date">{{ attempt.dailyChallengeDate | date: 'd MMM y' }}</span>
+          @if (attempt.isCorrect) {
+            <span class="hs-badge hs-badge--ok">✓ Correcto</span>
+          } @else {
+            <span class="hs-badge hs-badge--fail">✗ Incorrecto</span>
+          }
+        </div>
+        <p class="hs-row__answer">"{{ attempt.answer }}"</p>
+        <div class="hs-row__meta">{{ formatDuration(attempt.timeTakenSeconds) }} · {{ attempt.points }} pts</div>
+      </div>
+    }
+  </div>
+}
