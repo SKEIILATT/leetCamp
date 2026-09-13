@@ -1,0 +1,136 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--lc-mint);
+}
+
+.shell__sidebar {
+  flex: 0 0 260px;
+  min-width: 220px;
+  background: var(--lc-blue);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 28px 22px;
+  box-sizing: border-box;
+  border-right: 4px solid var(--lc-ink);
+}
+
+.shell__brand img {
+  height: 28px;
+}
+
+.shell__stats {
+  display: flex;
+  gap: 10px;
+}
+
+.stat {
+  flex: 1;
+  min-width: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2.5px solid var(--lc-ink);
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--lc-ink);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat__value {
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat__label {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
+.shell__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.shell__nav-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 2.5px solid transparent;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+
+  &.is-active {
+    background: #fff;
+    color: var(--lc-blue);
+    border-color: var(--lc-ink);
+    box-shadow: 4px 4px 0 var(--lc-ink);
+  }
+
+  &.is-disabled {
+    opacity: 0.55;
+    cursor: default;
+
+    em {
+      font-style: normal;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+  }
+}
+
+.shell__logout {
+  margin-top: auto;
+  background: transparent;
+  border: 2.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #fff;
+  }
+}
+
+.shell__content {
+  flex: 1 1 600px;
+  min-width: 280px;
+  padding: 32px clamp(20px, 4vw, 48px);
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .shell__sidebar {
+    flex: 0 0 auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 4px solid var(--lc-ink);
+  }
+}

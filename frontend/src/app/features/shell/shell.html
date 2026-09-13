@@ -1,0 +1,30 @@
+<div class="shell">
+  <aside class="shell__sidebar">
+    <div class="shell__brand">
+      <img src="CBBLANCO.png" alt="Coding Bootcamps ESPOL" />
+    </div>
+
+    <div class="shell__stats">
+      <div class="stat">
+        <span class="stat__value">{{ currentStreak() }}</span>
+        <span class="stat__label">🔥 Días de racha</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value">{{ totalPoints() }}</span>
+        <span class="stat__label">Puntos</span>
+      </div>
+    </div>
+
+    <nav class="shell__nav">
+      <a routerLink="/reto" routerLinkActive="is-active" class="shell__nav-link">Reto del día</a>
+      <span class="shell__nav-link is-disabled">Historial <em>Próximamente</em></span>
+      <span class="shell__nav-link is-disabled">Ranking <em>Próximamente</em></span>
+    </nav>
+
+    <button type="button" class="shell__logout" (click)="logout()">Cerrar sesión</button>
+  </aside>
+
+  <main class="shell__content">
+    <router-outlet />
+  </main>
+</div>
