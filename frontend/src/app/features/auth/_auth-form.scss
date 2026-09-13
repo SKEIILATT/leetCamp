@@ -1,0 +1,183 @@
+// Estilos compartidos entre login y registro — mismo shell de dos columnas
+// (formulario + panel de marca), a pantalla completa. Ver docs/DECISIONS.md.
+
+:host {
+  display: block;
+}
+
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--lc-white);
+}
+
+.login-page__form {
+  flex: 1 1 480px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+  padding: 64px clamp(28px, 6vw, 96px);
+  box-sizing: border-box;
+  border-right: 4px solid var(--lc-ink);
+}
+
+.login-page__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  h1 {
+    margin: 0;
+    font-family: var(--lc-font-display);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--lc-ink);
+  }
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--lc-ink);
+    opacity: 0.7;
+    line-height: 1.5;
+  }
+}
+
+.login-page__error {
+  margin: 0;
+  padding: 12px 14px;
+  border: 2.5px solid #8a1f1f;
+  border-radius: 8px;
+  background: #ffe8e8;
+  color: #8a1f1f;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-page__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--lc-ink);
+    text-transform: uppercase;
+  }
+
+  input {
+    border: 2.5px solid var(--lc-ink);
+    border-radius: 10px;
+    background: var(--lc-white);
+    padding: 13px 14px;
+    font-size: 15px;
+    color: var(--lc-ink);
+    font-family: inherit;
+    outline: none;
+    box-sizing: border-box;
+    width: 100%;
+    transition: box-shadow 0.1s ease, border-color 0.1s ease;
+
+    &:focus {
+      border-color: var(--lc-blue);
+      box-shadow: 4px 4px 0 var(--lc-blue);
+    }
+  }
+
+  &__hint {
+    font-size: 12.5px;
+    color: #8a1f1f;
+  }
+}
+
+.login-page__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lc-ink);
+  font-weight: 500;
+  cursor: pointer;
+
+  input {
+    accent-color: var(--lc-blue);
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--lc-blue);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--lc-sky);
+  }
+}
+
+.btn-primary {
+  align-self: flex-start;
+  background: var(--lc-blue);
+  color: #fff;
+  border: 3px solid var(--lc-ink);
+  border-radius: 10px;
+  padding: 15px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--lc-font-display);
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--lc-ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+
+  &:hover:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 3px 3px 0 var(--lc-ink);
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(5px, 5px);
+    box-shadow: 0 0 0 var(--lc-ink);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.login-page__footer {
+  margin: 0;
+  font-size: 14px;
+  color: var(--lc-ink);
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  .login-page__form {
+    padding: 40px 28px;
+    border-right: none;
+    border-bottom: 4px solid var(--lc-ink);
+  }
+}

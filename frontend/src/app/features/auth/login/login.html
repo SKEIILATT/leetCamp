@@ -5,6 +5,10 @@
       <p>Entra para continuar tu racha y resolver el reto de hoy.</p>
     </div>
 
+    @if (justRegistered()) {
+      <p class="login-page__success">Cuenta creada. Ya puedes iniciar sesión.</p>
+    }
+
     @if (errorMessage()) {
       <p class="login-page__error">{{ errorMessage() }}</p>
     }
@@ -44,23 +48,8 @@
       {{ submitting() ? 'Entrando…' : 'Iniciar sesión' }}
     </button>
 
-    <p class="login-page__footer">¿No tienes cuenta? <a href="#" class="link">Regístrate</a></p>
+    <p class="login-page__footer">¿No tienes cuenta? <a routerLink="/register" class="link">Regístrate</a></p>
   </form>
 
-  <div class="login-page__brand">
-    <span class="deco deco--circle deco--sky"></span>
-    <span class="deco deco--square deco--violet"></span>
-    <span class="deco deco--square deco--mint"></span>
-    <span class="deco deco--circle deco--white"></span>
-
-    <div class="badge">
-      <div class="badge__shadow"></div>
-      <div class="badge__frame">
-        <div class="badge__inner">
-          <img src="CBAZUL.png" alt="Coding Bootcamps ESPOL" />
-        </div>
-      </div>
-      <span class="badge__tag">Reto diario</span>
-    </div>
-  </div>
+  <app-auth-brand-panel tag="Reto diario" />
 </div>

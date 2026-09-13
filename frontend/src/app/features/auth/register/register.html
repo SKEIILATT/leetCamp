@@ -1,0 +1,64 @@
+<div class="login-page">
+  <form class="login-page__form" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="login-page__intro">
+      <h1>Crea tu cuenta</h1>
+      <p>Únete al bootcamp y empieza tu racha desde hoy.</p>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="login-page__error">{{ errorMessage() }}</p>
+    }
+
+    <div class="login-page__fields">
+      <label class="field">
+        <span class="field__label">Nombre para el ranking</span>
+        <input type="text" formControlName="displayName" placeholder="Ana Méndez" autocomplete="name" />
+        @if (displayName.touched && displayName.invalid) {
+          <span class="field__hint">Ingresa tu nombre.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Correo institucional</span>
+        <input type="email" formControlName="email" placeholder="nombre@espol.edu.ec" autocomplete="email" />
+        @if (email.touched && email.invalid) {
+          <span class="field__hint">Ingresa un correo válido.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Contraseña</span>
+        <input
+          type="password"
+          formControlName="password"
+          placeholder="Mínimo 8 caracteres"
+          autocomplete="new-password"
+        />
+        @if (password.touched && password.invalid) {
+          <span class="field__hint">La contraseña debe tener al menos 8 caracteres.</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">Confirmar contraseña</span>
+        <input
+          type="password"
+          formControlName="confirmPassword"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+        @if (confirmPassword.touched && form.hasError('passwordsMismatch')) {
+          <span class="field__hint">Las contraseñas no coinciden.</span>
+        }
+      </label>
+    </div>
+
+    <button type="submit" class="btn-primary" [disabled]="submitting()">
+      {{ submitting() ? 'Creando cuenta…' : 'Crear cuenta' }}
+    </button>
+
+    <p class="login-page__footer">¿Ya tienes cuenta? <a routerLink="/login" class="link">Inicia sesión</a></p>
+  </form>
+
+  <app-auth-brand-panel tag="Únete hoy" />
+</div>
