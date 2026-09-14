@@ -1,4 +1,10 @@
-import type { ChallengeRepository, Clock, DailyChallengeRepository } from '@leetcamp/domain';
+import type {
+  CategoryRepository,
+  ChallengeRepository,
+  Clock,
+  DailyChallengeRepository,
+  DifficultyRepository,
+} from '@leetcamp/domain';
 
 import { makeGetTodayChallenge } from './get-today-challenge.js';
 import { makeListDailyChallenges } from './list-daily-challenges.js';
@@ -16,6 +22,8 @@ import { makeScheduleDailyChallenge } from './schedule-daily-challenge.js';
 export interface DailyChallengesDeps {
   readonly dailyChallengeRepository: DailyChallengeRepository;
   readonly challengeRepository: ChallengeRepository;
+  readonly categoryRepository: CategoryRepository;
+  readonly difficultyRepository: DifficultyRepository;
   readonly clock: Clock;
 }
 

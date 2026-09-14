@@ -20,7 +20,14 @@ export class Login {
 
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly justRegistered = signal(this.route.snapshot.queryParamMap.has('registered'));
+
+  protected readonly successMessage = signal(
+    this.route.snapshot.queryParamMap.has('registered')
+      ? 'Cuenta creada. Ya puedes iniciar sesión.'
+      : this.route.snapshot.queryParamMap.has('reset')
+        ? 'Contraseña actualizada. Ya puedes iniciar sesión.'
+        : null,
+  );
 
   protected readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -47,7 +54,11 @@ export class Login {
     this.authService.login(this.form.getRawValue()).subscribe({
       next: () => {
         this.submitting.set(false);
-        this.router.navigateByUrl('/reto');
+        // NOT a hardcoded '/reto' — an admin logging in must land on their
+        // dashboard, not the student's daily challenge. `landingGuard` on
+        // the shell's empty child route is what actually decides per role;
+        // routing through '/' is what lets it run.
+        this.router.navigateByUrl('/');
       },
       error: (err: HttpErrorResponse) => {
         this.submitting.set(false);

@@ -9,7 +9,7 @@ import {
 } from '@leetcamp/domain';
 
 import { fromDateColumn, toDateColumn } from './calendar-date-column.js';
-import type { PrismaClient } from './prisma-client.js';
+import type { PrismaClient, PrismaTransactionClient } from './prisma-client.js';
 
 function toDomain(row: {
   id: string;
@@ -34,7 +34,10 @@ function toDomain(row: {
 }
 
 export function createPrismaAttemptRepository(
-  prisma: PrismaClient,
+  // Also accepts a transaction client — see `PrismaTransactionClient`'s doc
+  // comment. Every call below is a plain `prisma.attempt.*`, present
+  // identically on both types.
+  prisma: PrismaClient | PrismaTransactionClient,
   logger?: { error: (obj: unknown, msg: string) => void },
 ): AttemptRepository {
   return {

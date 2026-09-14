@@ -8,20 +8,25 @@ import {
   ok,
   repository,
   type AttemptRepository,
+  type AttemptTransactionRunner,
   type ChallengeRepository,
   type Clock,
   type DailyChallengeRepository,
   type DifficultyRepository,
   type IdGenerator,
   type Result,
-  type StreakRepository,
   type UserRepository,
   type ValidationEngine,
 } from '@leetcamp/domain';
 
 export interface SubmitAttemptDeps {
+  /** Read-only here: the friendly pre-check below, not the atomic write —
+   * see the note on `attemptTransactionRunner`. */
   readonly attemptRepository: AttemptRepository;
-  readonly streakRepository: StreakRepository;
+  /** Runs the "create the attempt, then update the streak" pair atomically —
+   * see the port's own doc comment for why this exists as a separate
+   * dependency instead of two plain repositories. */
+  readonly attemptTransactionRunner: AttemptTransactionRunner;
   readonly dailyChallengeRepository: DailyChallengeRepository;
   readonly challengeRepository: ChallengeRepository;
   /** Needed only for `calculatePoints`'s `difficultyLevel` input — see the
@@ -59,11 +64,12 @@ export interface SubmitAttemptOutput {
  * encodes (one attempt, blocked after submit; streak counts participation,
  * not correctness; no grace period).
  *
- * ⚠ NOT WRAPPED IN A DATABASE TRANSACTION. If the attempt write succeeds and
- * the streak write then fails, the attempt is not lost — the streak is
- * re-derivable from attempt history — but it IS a known gap: no
- * `$transaction` port exists in this codebase yet. Acceptable for the MVP,
- * revisit before this matters for real money/prizes riding on the streak.
+ * The attempt write and the streak write happen inside ONE database
+ * transaction (`attemptTransactionRunner`, see docs/DECISIONS.md) — either
+ * both land or neither does. This closed a gap that stood since the vertical
+ * was first built: previously, a failure between the two writes could not
+ * lose the attempt (re-derivable from history) but could leave the streak
+ * stale.
  */
 export function makeSubmitAttempt(
   deps: SubmitAttemptDeps,
@@ -120,38 +126,47 @@ export function makeSubmitAttempt(
       timeTakenSeconds,
     });
 
-    const attempt = await deps.attemptRepository.create({
-      id: deps.idGenerator.generate(),
-      userId: input.userId,
-      dailyChallengeDate: today,
-      answer: input.answer,
-      isCorrect: validated.value.isCorrect,
-      submittedAt,
-      timeTakenSeconds,
-      points: pointsEarned,
-    });
-    if (!attempt.ok) return err(attempt.error);
-
     // THE local date, per the STUDENT's own timezone — deliberately NOT
     // `today` (the global UTC date used above to pick the challenge). See the
     // header note on `Streak` for why these two can legitimately differ.
     const localDate = formatCalendarDate(submittedAt, user.value.timezone);
 
-    const previousStreak = await deps.streakRepository.findByUserId(input.userId);
-    if (!previousStreak.ok) return err(previousStreak.error);
+    // Both writes happen inside ONE transaction: either the attempt is
+    // recorded and the streak reflects it, or neither write lands. See
+    // `AttemptTransactionRunner`'s doc comment for why this exists as a
+    // separate port instead of two plain repository calls.
+    const txResult = await deps.attemptTransactionRunner.run(async (repos) => {
+      const attempt = await repos.attemptRepository.create({
+        id: deps.idGenerator.generate(),
+        userId: input.userId,
+        dailyChallengeDate: today,
+        answer: input.answer,
+        isCorrect: validated.value.isCorrect,
+        submittedAt,
+        timeTakenSeconds,
+        points: pointsEarned,
+      });
+      if (!attempt.ok) return err(attempt.error);
 
-    const nextStreak = applyAttempt(previousStreak.value, input.userId, localDate, pointsEarned);
+      const previousStreak = await repos.streakRepository.findByUserId(input.userId);
+      if (!previousStreak.ok) return err(previousStreak.error);
 
-    const savedStreak = await deps.streakRepository.save(nextStreak);
-    if (!savedStreak.ok) return err(savedStreak.error);
+      const nextStreak = applyAttempt(previousStreak.value, input.userId, localDate, pointsEarned);
+
+      const savedStreak = await repos.streakRepository.save(nextStreak);
+      if (!savedStreak.ok) return err(savedStreak.error);
+
+      return ok({ attempt: attempt.value, streak: savedStreak.value });
+    });
+    if (!txResult.ok) return err(txResult.error);
 
     return ok({
-      attemptId: attempt.value.id,
-      isCorrect: attempt.value.isCorrect,
+      attemptId: txResult.value.attempt.id,
+      isCorrect: txResult.value.attempt.isCorrect,
       pointsEarned,
-      currentStreak: savedStreak.value.currentStreak,
-      longestStreak: savedStreak.value.longestStreak,
-      totalPoints: savedStreak.value.totalPoints,
+      currentStreak: txResult.value.streak.currentStreak,
+      longestStreak: txResult.value.streak.longestStreak,
+      totalPoints: txResult.value.streak.totalPoints,
     });
   };
 }

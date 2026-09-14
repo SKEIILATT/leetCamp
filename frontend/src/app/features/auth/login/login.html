@@ -5,8 +5,8 @@
       <p>Entra para continuar tu racha y resolver el reto de hoy.</p>
     </div>
 
-    @if (justRegistered()) {
-      <p class="login-page__success">Cuenta creada. Ya puedes iniciar sesión.</p>
+    @if (successMessage()) {
+      <p class="login-page__success">{{ successMessage() }}</p>
     }
 
     @if (errorMessage()) {
@@ -41,7 +41,7 @@
         <input type="checkbox" />
         Mantener sesión iniciada
       </label>
-      <a href="#" class="link">¿Olvidaste tu contraseña?</a>
+      <a routerLink="/olvide-password" class="link">¿Olvidaste tu contraseña?</a>
     </div>
 
     <button type="submit" class="btn-primary" [disabled]="submitting()">

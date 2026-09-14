@@ -37,6 +37,7 @@ const stubRepository = (
 
 const validProfile: AuthorizationProfile = {
   userId: 'user-1',
+  displayName: 'Ana Méndez',
   roleId: 1,
   scopeIds: ['scope-a'],
 };
@@ -147,6 +148,7 @@ describe('checkRole', () => {
   const identity = {
     userId: 'user-1',
     subject: 'sub-1',
+    displayName: 'Ana Méndez',
     roleId: 1,
     role: 'admin' as const,
     scopeIds: [] as readonly string[],

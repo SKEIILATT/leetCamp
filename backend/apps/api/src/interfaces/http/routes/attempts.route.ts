@@ -15,6 +15,7 @@ const StreakSchema = z.object({
 const AttemptSchema = z.object({
   id: z.string(),
   dailyChallengeDate: z.iso.date(),
+  challengeTitle: z.string(),
   answer: z.string(),
   isCorrect: z.boolean(),
   submittedAt: z.iso.datetime(),
@@ -125,6 +126,7 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
         result.value.map((attempt) => ({
           id: attempt.id,
           dailyChallengeDate: attempt.dailyChallengeDate,
+          challengeTitle: attempt.challengeTitle,
           answer: attempt.answer,
           isCorrect: attempt.isCorrect,
           submittedAt: attempt.submittedAt.toISOString(),

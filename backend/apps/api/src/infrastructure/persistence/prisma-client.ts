@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import type { DatabaseHealthProbe, DatabaseHealthResult } from '@leetcamp/domain';
 
-import { PrismaClient } from '../../generated/prisma/index.js';
+import { PrismaClient, type Prisma } from '../../generated/prisma/index.js';
 
 /**
  * ┌───────────────────────────────────────────────────────────────────────────┐
@@ -50,6 +50,18 @@ export function createPrismaClient(options: PrismaClientOptions): PrismaClient {
  * the generated directory. See the boundary note at the top of the file.
  */
 export type { PrismaClient };
+
+/**
+ * The type of the `tx` handed to `prisma.$transaction(async (tx) => ...)`.
+ * Structurally identical to `PrismaClient` for every model delegate
+ * (`tx.attempt`, `tx.streak`, ...) — it just drops `$transaction` itself and
+ * the connection-lifecycle methods, which a callback running INSIDE a
+ * transaction must never call. Repositories that need to work both against
+ * the top-level client and inside a transaction (see
+ * `prisma-attempt-transaction-runner.ts`) accept `PrismaClient |
+ * PrismaTransactionClient` instead of only `PrismaClient`.
+ */
+export type PrismaTransactionClient = Prisma.TransactionClient;
 
 /**
  * Readiness probe over an already-constructed client.

@@ -15,12 +15,14 @@ export class Profile {
   protected readonly me = signal<Me | null>(null);
 
   protected readonly initials = computed(() => {
-    const email = this.me()?.email;
-    if (!email) {
+    const name = this.me()?.displayName;
+    if (!name) {
       return '?';
     }
-    const local = email.split('@')[0];
-    return local.slice(0, 2).toUpperCase();
+    const parts = name.trim().split(/\s+/);
+    const first = parts[0]?.[0] ?? '';
+    const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+    return (first + last).toUpperCase();
   });
 
   constructor() {

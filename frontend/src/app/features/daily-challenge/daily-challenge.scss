@@ -26,6 +26,33 @@
   gap: 20px;
 }
 
+.ce-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ce-badge {
+  font-family: var(--lc-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--lc-ink);
+
+  &--category {
+    background: var(--lc-blue);
+    color: #fff;
+  }
+
+  &--difficulty {
+    background: var(--lc-sky);
+    color: var(--lc-ink);
+  }
+}
+
 .ce-pane--problem {
   flex: 1 1 60%;
   min-width: 320px;

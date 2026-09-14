@@ -1,5 +1,6 @@
 import type {
   AttemptRepository,
+  AttemptTransactionRunner,
   ChallengeRepository,
   Clock,
   DailyChallengeRepository,
@@ -25,6 +26,7 @@ import { makeSubmitAttempt } from './submit-attempt.js';
 export interface AttemptsDeps {
   readonly attemptRepository: AttemptRepository;
   readonly streakRepository: StreakRepository;
+  readonly attemptTransactionRunner: AttemptTransactionRunner;
   readonly dailyChallengeRepository: DailyChallengeRepository;
   readonly challengeRepository: ChallengeRepository;
   readonly difficultyRepository: DifficultyRepository;

@@ -80,9 +80,10 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  createdChallenges Challenge[]
-  attempts          Attempt[]
-  streak            Streak?
+  createdChallenges    Challenge[]
+  attempts             Attempt[]
+  streak               Streak?
+  passwordResetTokens  PasswordResetToken[]
 
   @@index([subject])
   @@map("users")
@@ -220,4 +221,29 @@ model Streak {
   user User @relation(fields: [userId], references: [id])
 
   @@map("streaks")
+}
+
+/// One issued "forgot your password" link. `tokenHash` is a SHA-256 hash of
+/// the raw token that gets emailed — the raw value is never stored, only
+/// what is needed to recognise it again. See the domain port's header
+/// comment (`PasswordResetTokenRepository`) for why.
+model PasswordResetToken {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  tokenHash String @unique @map("token_hash")
+
+  expiresAt DateTime  @map("expires_at")
+  /// `null` until consumed — a token is single-use, enforced by the
+  /// repository checking this alongside `expiresAt`, not by deleting the
+  /// row (keeping it is what stops the exact same token being replayed
+  /// after the account owner already reset their password with it).
+  usedAt    DateTime? @map("used_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }

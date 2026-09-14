@@ -20,6 +20,8 @@
  */
 export * from './attempt.js';
 export * from './attempt-errors.js';
+export * from './attempt-transaction.js';
+export * from './password-reset.js';
 export * from './catalog.js';
 export * from './catalog-errors.js';
 export * from './challenge.js';

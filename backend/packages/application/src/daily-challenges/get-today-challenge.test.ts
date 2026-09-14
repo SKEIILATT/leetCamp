@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { err, ok, repository, type Challenge, type Clock, type DailyChallenge } from '@leetcamp/domain';
+import {
+  err,
+  ok,
+  repository,
+  type Category,
+  type Challenge,
+  type Clock,
+  type DailyChallenge,
+  type Difficulty,
+} from '@leetcamp/domain';
 
 import { makeGetTodayChallenge } from './get-today-challenge.js';
 
@@ -26,8 +35,30 @@ const challenge: Challenge = {
   updatedAt: new Date('2026-01-01T00:00:00Z'),
 };
 
+const category: Category = { id: 'cat-1', name: 'SQL', createdAt: new Date('2026-01-01T00:00:00Z') };
+const difficulty: Difficulty = {
+  id: 'diff-1',
+  name: 'Fácil',
+  level: 1,
+  createdAt: new Date('2026-01-01T00:00:00Z'),
+};
+
+const categoryRepository = {
+  findById: async () => ok(category),
+  findByName: async () => ok(category),
+  list: async () => ok([category]),
+  create: async () => ok(category),
+};
+
+const difficultyRepository = {
+  findById: async () => ok(difficulty),
+  findByName: async () => ok(difficulty),
+  list: async () => ok([difficulty]),
+  create: async () => ok(difficulty),
+};
+
 describe('getTodayChallenge', () => {
-  it("looks up today's date (derived from the clock) and returns the challenge, without the answer", async () => {
+  it("looks up today's date (derived from the clock) and returns the challenge, with category/difficulty names, without the answer", async () => {
     let dateQueried: string | undefined;
 
     const getTodayChallenge = makeGetTodayChallenge({
@@ -45,6 +76,8 @@ describe('getTodayChallenge', () => {
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
       },
+      categoryRepository,
+      difficultyRepository,
       clock,
     });
 
@@ -56,6 +89,8 @@ describe('getTodayChallenge', () => {
     // THE property this use case exists to guarantee.
     expect(result.value).not.toHaveProperty('expectedAnswer');
     expect(result.value.title).toBe(challenge.title);
+    expect(result.value.categoryName).toBe('SQL');
+    expect(result.value.difficultyName).toBe('Fácil');
   });
 
   it('answers NOT_FOUND when nothing is scheduled for today', async () => {
@@ -71,6 +106,8 @@ describe('getTodayChallenge', () => {
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
       },
+      categoryRepository,
+      difficultyRepository,
       clock,
     });
 
@@ -94,6 +131,8 @@ describe('getTodayChallenge', () => {
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
       },
+      categoryRepository,
+      difficultyRepository,
       clock,
     });
 

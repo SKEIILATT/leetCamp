@@ -5,6 +5,7 @@ import {
   buildAuthUseCases,
   buildChallengesUseCases,
   buildDailyChallengesUseCases,
+  buildPasswordResetUseCases,
   buildRankingUseCases,
   buildSystemUseCases,
 } from '@leetcamp/application';
@@ -15,14 +16,17 @@ import { buildHttpApp } from './interfaces/http/app.js';
 import { createJwtTokenService, createScryptPasswordHasher } from './infrastructure/auth/index.js';
 import { createSystemClock } from './infrastructure/clock/index.js';
 import { createUuidGenerator } from './infrastructure/id/index.js';
+import { createConsolePasswordResetMailer } from './infrastructure/notifications/index.js';
 import {
   createPrismaAttemptRepository,
+  createPrismaAttemptTransactionRunner,
   createPrismaCategoryRepository,
   createPrismaChallengeRepository,
   createPrismaClient,
   createPrismaDailyChallengeRepository,
   createPrismaDatabaseHealthProbe,
   createPrismaDifficultyRepository,
+  createPrismaPasswordResetRepository,
   createPrismaStreakRepository,
   createPrismaUserAuthorizationRepository,
   createPrismaUserRepository,
@@ -125,10 +129,11 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
 
   const challengeRepository = createPrismaChallengeRepository(prisma, log);
   const difficultyRepository = createPrismaDifficultyRepository(prisma, log);
+  const categoryRepository = createPrismaCategoryRepository(prisma, log);
 
   const challengesUseCases = buildChallengesUseCases({
     challengeRepository,
-    categoryRepository: createPrismaCategoryRepository(prisma, log),
+    categoryRepository,
     difficultyRepository,
     idGenerator,
     clock: createSystemClock(),
@@ -143,6 +148,8 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   const dailyChallengesUseCases = buildDailyChallengesUseCases({
     dailyChallengeRepository,
     challengeRepository,
+    categoryRepository,
+    difficultyRepository,
     clock: createSystemClock('UTC'),
   });
 
@@ -151,6 +158,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   const attemptsUseCases = buildAttemptsUseCases({
     attemptRepository: createPrismaAttemptRepository(prisma, log),
     streakRepository,
+    attemptTransactionRunner: createPrismaAttemptTransactionRunner(prisma, log),
     dailyChallengeRepository,
     challengeRepository,
     difficultyRepository,
@@ -165,6 +173,19 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   });
 
   const rankingUseCases = buildRankingUseCases({ streakRepository });
+
+  const passwordResetUseCases = buildPasswordResetUseCases({
+    userRepository: userRepositoryForAuth,
+    passwordResetTokenRepository: createPrismaPasswordResetRepository(prisma, log),
+    passwordHasher,
+    // See the adapter's own doc comment for why this is a stand-in, not a
+    // real mail provider, and what has to change before a real release.
+    mailer: createConsolePasswordResetMailer(log),
+    idGenerator,
+    clock: createSystemClock(),
+    frontendBaseUrl: env.FRONTEND_BASE_URL,
+    tokenTtlMinutes: env.PASSWORD_RESET_TOKEN_TTL_MINUTES,
+  });
 
   // ── Scheduler ──────────────────────────────────────────────────────────────
   //
@@ -193,6 +214,7 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     attemptsUseCases,
     adminUsersUseCases,
     rankingUseCases,
+    passwordResetUseCases,
     config: {
       nodeEnv: env.NODE_ENV,
       logLevel: env.LOG_LEVEL,

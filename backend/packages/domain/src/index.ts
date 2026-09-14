@@ -29,6 +29,7 @@ export * from './ports/user-authorization-repository.js';
 export * from './ports/clock.js';
 export * from './ports/id-generator.js';
 export * from './ports/password-hasher.js';
+export * from './ports/password-reset-mailer.js';
 export * from './ports/token-issuer.js';
 export * from './ports/token-verifier.js';
 export * from './ports/validation-engine.js';

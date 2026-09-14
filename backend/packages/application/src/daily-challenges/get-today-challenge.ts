@@ -4,15 +4,23 @@ import {
   noDailyChallengeScheduled,
   ok,
   repository,
+  type CategoryRepository,
   type ChallengeRepository,
   type Clock,
   type DailyChallengeRepository,
+  type DifficultyRepository,
   type Result,
 } from '@leetcamp/domain';
 
 export interface GetTodayChallengeDeps {
   readonly dailyChallengeRepository: DailyChallengeRepository;
   readonly challengeRepository: ChallengeRepository;
+  /** Only for the display names on the response — see `PublicChallenge`.
+   * Students cannot reach `GET /admin/categories`/`/admin/difficulties`
+   * (admin-only), so this is the only way today's badge can show "SQL"
+   * instead of a raw category id. */
+  readonly categoryRepository: CategoryRepository;
+  readonly difficultyRepository: DifficultyRepository;
   /** The GLOBAL reference clock for "what day is it" — deliberately NOT a
    * per-user timezone. There is one reto del día for the whole bootcamp; the
    * per-user day cutoff (docs/DECISIONS.md) only matters for `Streak`, not
@@ -33,7 +41,9 @@ export interface PublicChallenge {
   readonly challengeId: string;
   readonly date: string;
   readonly categoryId: string;
+  readonly categoryName: string;
   readonly difficultyId: string;
+  readonly difficultyName: string;
   readonly title: string;
   readonly promptMarkdown: string;
   readonly codeSnippet: string;
@@ -61,11 +71,25 @@ export function makeGetTodayChallenge(
       return err(repository('Scheduled daily challenge references a missing challenge'));
     }
 
+    const category = await deps.categoryRepository.findById(challenge.value.categoryId);
+    if (!category.ok) return err(category.error);
+    if (category.value === null) {
+      return err(repository('Challenge references a missing category'));
+    }
+
+    const difficulty = await deps.difficultyRepository.findById(challenge.value.difficultyId);
+    if (!difficulty.ok) return err(difficulty.error);
+    if (difficulty.value === null) {
+      return err(repository('Challenge references a missing difficulty'));
+    }
+
     return ok({
       challengeId: challenge.value.id,
       date: daily.value.date,
       categoryId: challenge.value.categoryId,
+      categoryName: category.value.name,
       difficultyId: challenge.value.difficultyId,
+      difficultyName: difficulty.value.name,
       title: challenge.value.title,
       promptMarkdown: challenge.value.promptMarkdown,
       codeSnippet: challenge.value.codeSnippet,

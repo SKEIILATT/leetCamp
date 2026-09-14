@@ -52,13 +52,14 @@ export function createPrismaUserAuthorizationRepository(
             status: 'active',
             deletedAt: null,
           },
-          select: { id: true, roleId: true, scopeIds: true },
+          select: { id: true, displayName: true, roleId: true, scopeIds: true },
         });
 
         if (!row) return ok(null);
 
         return ok({
           userId: row.id,
+          displayName: row.displayName,
           roleId: row.roleId,
           scopeIds: row.scopeIds,
         });

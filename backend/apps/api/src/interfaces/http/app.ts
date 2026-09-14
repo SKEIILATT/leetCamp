@@ -23,6 +23,7 @@ import type {
   AuthUseCases,
   ChallengesUseCases,
   DailyChallengesUseCases,
+  PasswordResetUseCases,
   RankingUseCases,
 } from '@leetcamp/application';
 
@@ -35,6 +36,7 @@ import { registerAuthRoutes } from './routes/auth.route.js';
 import { registerDailyChallengeRoutes } from './routes/daily-challenge.route.js';
 import { registerHealthRoutes } from './routes/health.route.js';
 import { registerMeRoutes } from './routes/me.route.js';
+import { registerPasswordResetRoutes } from './routes/password-reset.route.js';
 import { registerRankingRoutes } from './routes/ranking.route.js';
 
 export interface HttpAppConfig {
@@ -92,6 +94,7 @@ export interface HttpAppDeps {
   readonly attemptsUseCases: AttemptsUseCases;
   readonly adminUsersUseCases: AdminUsersUseCases;
   readonly rankingUseCases: RankingUseCases;
+  readonly passwordResetUseCases: PasswordResetUseCases;
 }
 
 /**
@@ -284,6 +287,7 @@ export async function buildHttpApp(deps: HttpAppDeps): Promise<FastifyInstance> 
   // 7) Routes.
   registerHealthRoutes(app, deps.config.version, deps.databaseProbe);
   registerAuthRoutes(app, deps.authUseCases);
+  registerPasswordResetRoutes(app, deps.passwordResetUseCases);
   registerAdminChallengeRoutes(app, deps.challengesUseCases);
   registerDailyChallengeRoutes(app, deps.dailyChallengesUseCases);
   registerAttemptsRoutes(app, deps.attemptsUseCases);

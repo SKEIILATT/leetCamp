@@ -22,6 +22,7 @@ function fakeRepository(overrides: Partial<UserRepository> = {}): UserRepository
     findById: async () => ok(target),
     list: async () => ok([target]),
     setActive: async (id, isActive) => ok({ ...target, id, isActive }),
+    updatePasswordHash: async (id) => ok({ ...target, id }),
     create: async () => ok(target),
     ...overrides,
   };

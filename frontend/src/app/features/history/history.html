@@ -31,17 +31,22 @@
       <div class="hs-log">
         @for (attempt of attempts(); track attempt.id) {
           <div class="hs-row" [class.hs-row--correct]="attempt.isCorrect" [class.hs-row--incorrect]="!attempt.isCorrect">
-            <span class="hs-row__result">
-              @if (attempt.isCorrect) {
-                ✓
-              } @else {
-                ✗
-              }
-            </span>
-            <span class="hs-row__date">{{ attempt.dailyChallengeDate | date: 'd MMM y' }}</span>
-            <span class="hs-row__answer">"{{ attempt.answer }}"</span>
-            <span class="hs-row__meta">{{ formatDuration(attempt.timeTakenSeconds) }}</span>
-            <span class="hs-row__points">{{ attempt.points }} pts</span>
+            <div class="hs-row__top">
+              <span class="hs-row__result">
+                @if (attempt.isCorrect) {
+                  ✓
+                } @else {
+                  ✗
+                }
+              </span>
+              <span class="hs-row__title">{{ attempt.challengeTitle }}</span>
+              <span class="hs-row__points">{{ attempt.points }} pts</span>
+            </div>
+            <div class="hs-row__bottom">
+              <span class="hs-row__date">{{ attempt.dailyChallengeDate | date: 'd MMM y' }}</span>
+              <span class="hs-row__answer">"{{ attempt.answer }}"</span>
+              <span class="hs-row__meta">{{ formatDuration(attempt.timeTakenSeconds) }}</span>
+            </div>
           </div>
         }
       </div>

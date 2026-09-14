@@ -43,4 +43,10 @@ export interface UserRepository {
    * short, window — acceptable for this project's threat model, not
    * something this port silently promises to close. */
   setActive(id: string, isActive: boolean): Promise<Result<User>>;
+
+  /** Added for the `passwordReset` vertical: `resetPassword` overwrites the
+   * hash directly — there is no "old password" check here, because knowing
+   * the reset token (proven by whoever calls this) already established the
+   * caller's right to set a new one. */
+  updatePasswordHash(id: string, passwordHash: string): Promise<Result<User>>;
 }

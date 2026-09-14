@@ -3,7 +3,8 @@
     <section class="pf-section pf-hero">
       <div class="pf-avatar">{{ initials() }}</div>
       <div class="pf-identity">
-        <span class="pf-email">{{ me()?.email ?? 'Cargando…' }}</span>
+        <span class="pf-name">{{ me()?.displayName ?? 'Cargando…' }}</span>
+        <span class="pf-email">{{ me()?.email }}</span>
         <span class="pf-role">{{ me()?.role === 'admin' ? 'Administrador' : 'Estudiante' }}</span>
       </div>
     </section>

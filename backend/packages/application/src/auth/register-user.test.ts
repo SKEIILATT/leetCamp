@@ -46,6 +46,9 @@ function fakeRepository(overrides: Partial<UserRepository> = {}): UserRepository
     setActive: async () => {
       throw new Error('registerUser must never change account status');
     },
+    updatePasswordHash: async () => {
+      throw new Error('registerUser must never change the password hash');
+    },
     create: async (user: NewUser & { id: string; createdAt: Date }) =>
       ok({ ...user, isActive: true }),
     ...overrides,

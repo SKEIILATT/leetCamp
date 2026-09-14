@@ -107,6 +107,7 @@ export async function resolveIdentity(
     // Conditional spread: under `exactOptionalPropertyTypes`, a key present with
     // value `undefined` is NOT the same as an absent key.
     ...(verified.value.email !== undefined ? { email: verified.value.email } : {}),
+    displayName: profile.displayName,
     roleId: profile.roleId,
     role,
     scopeIds: profile.scopeIds,

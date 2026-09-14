@@ -6,15 +6,15 @@ import { MeService } from './me.service';
 
 /**
  * Decide a dónde aterriza cada rol al entrar sin ruta específica ('/').
- * Un admin no participa del reto/racha — su "home" es el banco de preguntas,
- * no "Reto del día".
+ * Un admin no participa del reto/racha — su "home" es su dashboard de
+ * métricas, no "Reto del día".
  */
 export const landingGuard: CanActivateFn = () => {
   const meService = inject(MeService);
   const router = inject(Router);
 
   return meService.getMe().pipe(
-    map((me) => router.parseUrl(me.role === 'admin' ? '/admin/preguntas' : '/reto')),
+    map((me) => router.parseUrl(me.role === 'admin' ? '/admin/dashboard' : '/reto')),
     catchError(() => of(router.parseUrl('/reto'))),
   );
 };

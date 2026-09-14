@@ -71,6 +71,16 @@ export function createPrismaUserRepository(
       }
     },
 
+    async updatePasswordHash(id: string, passwordHash: string): Promise<Result<User>> {
+      try {
+        const row = await prisma.user.update({ where: { id }, data: { passwordHash } });
+        return ok(toDomainUser(row));
+      } catch (error) {
+        logger?.error({ err: error }, 'failed to update the password hash');
+        return err(repository('Could not update the password'));
+      }
+    },
+
     async create(user: NewUser & { id: string; createdAt: Date }): Promise<Result<User>> {
       try {
         const row = await prisma.user.create({

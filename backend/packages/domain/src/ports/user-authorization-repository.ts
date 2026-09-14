@@ -8,6 +8,8 @@ import type { Result } from '../result.js';
 export interface AuthorizationProfile {
   /** Application user id — NOT the token's `sub`. */
   readonly userId: string;
+  /** Public display name — same value shown on the ranking. */
+  readonly displayName: string;
   /** Raw `role_id`, untranslated. Translation belongs to `roles.ts`. */
   readonly roleId: number;
   /** Tenants / organizations / sites in scope. See `RequestIdentity.scopeIds`. */

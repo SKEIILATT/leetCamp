@@ -6,6 +6,7 @@ import {
   ROLE_ID,
   type Attempt,
   type AttemptRepository,
+  type AttemptTransactionRunner,
   type Challenge,
   type ChallengeRepository,
   type Clock,
@@ -65,6 +66,7 @@ const student: User = {
 function deps(overrides: {
   attemptRepository?: Partial<AttemptRepository>;
   streakRepository?: Partial<StreakRepository>;
+  attemptTransactionRunner?: AttemptTransactionRunner;
   dailyChallengeRepository?: Partial<DailyChallengeRepository>;
   challengeRepository?: Partial<ChallengeRepository>;
   difficultyRepository?: Partial<DifficultyRepository>;
@@ -109,6 +111,7 @@ function deps(overrides: {
     findById: async () => ok(student),
     list: async () => ok([student]),
     setActive: async () => ok(student),
+    updatePasswordHash: async () => ok(student),
     create: async () => ok(student),
     ...overrides.userRepository,
   };
@@ -117,9 +120,19 @@ function deps(overrides: {
     ...overrides.validationEngine,
   };
 
+  // A fake "transaction" that just runs the work against the SAME fakes —
+  // real atomicity is the Prisma adapter's job
+  // (`prisma-attempt-transaction-runner.ts`), tested separately; this only
+  // has to preserve the existing behaviour these tests assert on.
+  const attemptTransactionRunner: AttemptTransactionRunner =
+    overrides.attemptTransactionRunner ?? {
+      run: (work) => work({ attemptRepository, streakRepository }),
+    };
+
   return {
     attemptRepository,
     streakRepository,
+    attemptTransactionRunner,
     dailyChallengeRepository,
     challengeRepository,
     difficultyRepository,
@@ -291,6 +304,24 @@ describe('submitAttempt', () => {
     const submitAttempt = makeSubmitAttempt(
       deps({ dailyChallengeRepository: { findByDate: async () => err(repository('connection refused')) } }),
     );
+
+    const result = await submitAttempt({ userId: student.id, answer: '42' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.error.code).toBe('REPOSITORY');
+  });
+
+  it('propagates a failure from the attempt transaction as-is, without a partial success', async () => {
+    // Simulates the whole transaction rolling back (e.g. the streak write
+    // failed and the adapter rolled the attempt write back with it) — from
+    // `submitAttempt`'s point of view this must look exactly like any other
+    // repository failure, not a 2xx with missing fields.
+    const failingTransactionRunner: AttemptTransactionRunner = {
+      run: async () => err(repository('the streak write failed, transaction rolled back')),
+    };
+
+    const submitAttempt = makeSubmitAttempt(deps({ attemptTransactionRunner: failingTransactionRunner }));
 
     const result = await submitAttempt({ userId: student.id, answer: '42' });
 

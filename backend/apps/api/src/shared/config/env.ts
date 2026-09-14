@@ -158,6 +158,27 @@ export const env = createEnv({
      * a same-day re-login is an acceptable and expected trade-off. */
     JWT_TTL_SECONDS: z.coerce.number().int().positive().default(86_400),
 
+    // ── Password reset ────────────────────────────────────────────────────────
+    /**
+     * Base URL the reset link points at — the ANGULAR app, not this API.
+     * NO trailing slash (stripped below): `requestPasswordReset` builds the
+     * link as `${FRONTEND_BASE_URL}/restablecer?token=...`, and a trailing
+     * slash would produce a double slash there.
+     *
+     * Defaults to the local `ng serve` origin so `pnpm dev` works out of the
+     * box; a real deployment behind Caddy (see deploy/Caddyfile, same-origin
+     * design) should set this to the real domain.
+     */
+    FRONTEND_BASE_URL: z
+      .url()
+      .default('http://localhost:4200')
+      .transform((value) => value.replace(/\/+$/, '')),
+
+    /** How long a reset link stays valid, in MINUTES. Short-lived on purpose
+     * — a forgotten inbox tab with a live "become this account" link is a
+     * real risk a same-day password change doesn't need to accept. */
+    PASSWORD_RESET_TOKEN_TTL_MINUTES: z.coerce.number().int().positive().default(30),
+
     // ── Scheduler ─────────────────────────────────────────────────────────────
     /**
      * THE MASTER SWITCH. Default `false`, and the default is the important part:

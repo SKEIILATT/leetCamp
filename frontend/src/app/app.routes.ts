@@ -8,8 +8,10 @@ import { AdminDashboard } from './features/admin/admin-dashboard/admin-dashboard
 import { AdminSchedule } from './features/admin/admin-schedule/admin-schedule';
 import { AdminTaxonomy } from './features/admin/admin-taxonomy/admin-taxonomy';
 import { AdminUsers } from './features/admin/admin-users/admin-users';
+import { ForgotPassword } from './features/auth/forgot-password/forgot-password';
 import { Login } from './features/auth/login/login';
 import { Register } from './features/auth/register/register';
+import { ResetPassword } from './features/auth/reset-password/reset-password';
 import { DailyChallenge } from './features/daily-challenge/daily-challenge';
 import { Dashboard } from './features/dashboard/dashboard';
 import { History } from './features/history/history';
@@ -21,6 +23,8 @@ import { Shell } from './features/shell/shell';
 export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
+  { path: 'olvide-password', component: ForgotPassword },
+  { path: 'restablecer', component: ResetPassword },
   {
     path: '',
     component: Shell,

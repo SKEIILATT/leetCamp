@@ -61,10 +61,21 @@
   min-width: 0;
 }
 
+.pf-name {
+  font-family: var(--lc-font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--lc-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pf-email {
   font-family: var(--lc-font-mono);
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--lc-ink);
+  opacity: 0.75;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

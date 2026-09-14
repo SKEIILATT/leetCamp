@@ -40,6 +40,11 @@ export interface RequestIdentity {
 
   readonly email?: string;
 
+  /** Public display name — same value shown on the ranking. Read fresh from
+   * the database alongside role/scopes, same reasoning as those: a name
+   * change must not wait for the token to expire. */
+  readonly displayName: string;
+
   /** Raw `role_id`, untranslated. This is what `requireRole(...)` compares. */
   readonly roleId: number;
 
