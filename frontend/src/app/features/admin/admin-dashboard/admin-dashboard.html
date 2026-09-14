@@ -1,0 +1,89 @@
+<app-screen-frame filename="admin.dashboard">
+  @if (state() === 'loading') {
+    <div class="ov-center">
+      <p>Cargando métricas…</p>
+    </div>
+  } @else if (state() === 'error') {
+    <div class="ov-center">
+      <p>No pudimos cargar las métricas.</p>
+    </div>
+  } @else {
+    <div class="ov-content">
+      <section class="ov-section">
+        <h2>Vista general</h2>
+        <div class="ov-stats">
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ students().length }}</span>
+            <span class="ov-stat__label">Estudiantes registrados</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ activeStudents() }}</span>
+            <span class="ov-stat__label">Activos</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ participationRate() }}%</span>
+            <span class="ov-stat__label">Han participado alguna vez</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ todayScheduled() ? 'Sí' : 'No' }}</span>
+            <span class="ov-stat__label">Reto de hoy programado</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ov-section">
+        <h2>Banco de preguntas</h2>
+        <div class="ov-stats">
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ publishedCount() }}</span>
+            <span class="ov-stat__label">Publicadas</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ draftCount() }}</span>
+            <span class="ov-stat__label">Borradores</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ categoriesCount() }}</span>
+            <span class="ov-stat__label">Categorías</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ difficultiesCount() }}</span>
+            <span class="ov-stat__label">Dificultades</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ov-section">
+        <h2>Participación</h2>
+        <div class="ov-stats">
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ avgPoints() }}</span>
+            <span class="ov-stat__label">Puntos promedio</span>
+          </div>
+          <div class="ov-stat">
+            <span class="ov-stat__value">{{ avgStreak() }}</span>
+            <span class="ov-stat__label">Racha promedio</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="ov-section">
+        <h2>Top 5</h2>
+        @if (topFive().length > 0) {
+          <div class="ov-log">
+            @for (entry of topFive(); track entry.userId) {
+              <div class="ov-row">
+                <span class="ov-row__pos">{{ entry.position }}</span>
+                <span class="ov-row__name">{{ entry.displayName }}</span>
+                <span class="ov-row__streak">🔥 {{ entry.currentStreak }}</span>
+                <span class="ov-row__points">{{ entry.totalPoints }} pts</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="ov-empty">Todavía nadie ha participado.</p>
+        }
+      </section>
+    </div>
+  }
+</app-screen-frame>

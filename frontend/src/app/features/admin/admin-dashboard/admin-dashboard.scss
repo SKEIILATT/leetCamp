@@ -1,0 +1,136 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.ov-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  font-family: var(--lc-font-body);
+  color: var(--lc-ink);
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+}
+
+.ov-content {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.ov-section {
+  padding: 28px 36px;
+  border-bottom: 3px solid var(--lc-ink);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  h2 {
+    margin: 0 0 16px;
+    font-family: var(--lc-font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--lc-ink);
+  }
+}
+
+.ov-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.ov-stat {
+  background: var(--lc-mint);
+  border: 2.5px solid var(--lc-ink);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ov-stat__value {
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--lc-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-stat__label {
+  font-size: 0.76rem;
+  color: var(--lc-ink);
+  opacity: 0.75;
+}
+
+.ov-log {
+  display: flex;
+  flex-direction: column;
+}
+
+.ov-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1.5px solid rgba(3, 5, 65, 0.12);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.ov-row__pos {
+  width: 24px;
+  flex-shrink: 0;
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  text-align: center;
+  color: var(--lc-ink);
+}
+
+.ov-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--lc-ink);
+}
+
+.ov-row__streak {
+  flex-shrink: 0;
+  font-family: var(--lc-font-mono);
+  font-size: 0.85rem;
+  color: var(--lc-ink);
+  opacity: 0.8;
+}
+
+.ov-row__points {
+  flex-shrink: 0;
+  min-width: 70px;
+  text-align: right;
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--lc-ink);
+}
+
+.ov-empty {
+  margin: 0;
+  color: var(--lc-ink);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}

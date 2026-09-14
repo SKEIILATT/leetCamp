@@ -1,0 +1,222 @@
+// Estilos compartidos entre las 4 pantallas de admin — mismo patrón de
+// secciones divididas por línea (no cards) que el resto de la app post-login.
+
+.ad-content {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.ad-section {
+  padding: 28px 36px;
+  border-bottom: 3px solid var(--lc-ink);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  h2 {
+    margin: 0 0 16px;
+    font-family: var(--lc-font-display);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--lc-ink);
+  }
+}
+
+.ad-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 16px;
+}
+
+.ad-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 160px;
+  min-width: 140px;
+
+  label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--lc-ink);
+    opacity: 0.75;
+  }
+
+  input,
+  select,
+  textarea {
+    border: 2.5px solid var(--lc-ink);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.92rem;
+    font-family: inherit;
+    color: var(--lc-ink);
+    background: var(--lc-white);
+    outline: none;
+    box-sizing: border-box;
+    width: 100%;
+
+    &:focus {
+      border-color: var(--lc-blue);
+      box-shadow: 3px 3px 0 var(--lc-blue);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: var(--lc-font-mono);
+  }
+}
+
+.ad-field--grow {
+  flex: 2 1 260px;
+}
+
+.ad-btn {
+  background: var(--lc-blue);
+  color: #fff;
+  border: 2.5px solid var(--lc-ink);
+  border-radius: 8px;
+  padding: 11px 22px;
+  font-family: var(--lc-font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--lc-ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--lc-ink);
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: 0 0 0 var(--lc-ink);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.ad-btn--ghost {
+  background: var(--lc-white);
+  color: var(--lc-ink);
+}
+
+.ad-btn--sm {
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  box-shadow: 3px 3px 0 var(--lc-ink);
+}
+
+.ad-error {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 2px solid #8a1f1f;
+  border-radius: 8px;
+  background: #ffe8e8;
+  color: #8a1f1f;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ad-log {
+  display: flex;
+  flex-direction: column;
+}
+
+.ad-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1.5px solid rgba(3, 5, 65, 0.12);
+  flex-wrap: wrap;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.ad-row__title {
+  flex: 1;
+  min-width: 160px;
+  font-weight: 600;
+  color: var(--lc-ink);
+}
+
+.ad-row__date {
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  color: var(--lc-ink);
+  min-width: 110px;
+}
+
+.ad-row__meta {
+  font-family: var(--lc-font-mono);
+  font-size: 0.78rem;
+  color: var(--lc-ink);
+  opacity: 0.7;
+}
+
+.ad-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--lc-ink);
+  background: var(--lc-mint);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--lc-ink);
+}
+
+.ad-badge {
+  font-family: var(--lc-font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--lc-ink);
+  white-space: nowrap;
+
+  &--draft {
+    background: #fff3c4;
+    color: #8a5a00;
+  }
+
+  &--published,
+  &--active {
+    background: #e4f8ed;
+    color: #1d8a57;
+  }
+
+  &--inactive {
+    background: #ffe8e8;
+    color: #8a1f1f;
+  }
+}
+
+.ad-empty {
+  margin: 0;
+  color: var(--lc-ink);
+  opacity: 0.7;
+  font-size: 0.9rem;
+}

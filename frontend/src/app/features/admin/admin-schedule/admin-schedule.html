@@ -1,0 +1,48 @@
+<app-screen-frame filename="admin.reto-diario">
+  <div class="ad-content">
+    <section class="ad-section">
+      <h2>Programar el reto del día</h2>
+
+      @if (errorMessage()) {
+        <p class="ad-error">{{ errorMessage() }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="ad-form" novalidate>
+        <div class="ad-field">
+          <label>Fecha</label>
+          <input type="date" formControlName="date" />
+        </div>
+        <div class="ad-field ad-field--grow">
+          <label>Pregunta publicada</label>
+          <select formControlName="challengeId">
+            <option value="" disabled>Elige una…</option>
+            @for (c of publishedChallenges(); track c.id) {
+              <option [value]="c.id">{{ c.title }}</option>
+            }
+          </select>
+        </div>
+        <button type="submit" class="ad-btn" [disabled]="saving()">
+          {{ saving() ? 'Programando…' : 'Programar' }}
+        </button>
+      </form>
+
+      @if (publishedChallenges().length === 0) {
+        <p class="ad-empty">Todavía no hay ninguna pregunta publicada — publícala primero en "Banco de preguntas".</p>
+      }
+    </section>
+
+    <section class="ad-section">
+      <h2>Calendario programado</h2>
+      <div class="ad-log">
+        @for (entry of scheduled(); track entry.date) {
+          <div class="ad-row">
+            <span class="ad-row__date">{{ entry.date }}</span>
+            <span class="ad-row__title">{{ challengeTitle(entry.challengeId) }}</span>
+          </div>
+        } @empty {
+          <p class="ad-empty">Todavía no hay retos programados.</p>
+        }
+      </div>
+    </section>
+  </div>
+</app-screen-frame>

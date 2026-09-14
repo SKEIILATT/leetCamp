@@ -1,0 +1,89 @@
+<app-screen-frame filename="admin.preguntas">
+  <div class="ad-content">
+    <section class="ad-section">
+      <h2>Nueva pregunta</h2>
+
+      @if (errorMessage()) {
+        <p class="ad-error">{{ errorMessage() }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" class="ad-form ad-form--stack" novalidate>
+        <div class="ad-form-row">
+          <div class="ad-field">
+            <label>Categoría</label>
+            <select formControlName="categoryId">
+              <option value="" disabled>Elige una…</option>
+              @for (c of categories(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="ad-field">
+            <label>Dificultad</label>
+            <select formControlName="difficultyId">
+              <option value="" disabled>Elige una…</option>
+              @for (d of difficulties(); track d.id) {
+                <option [value]="d.id">{{ d.name }} (nivel {{ d.level }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="ad-field">
+          <label>Título</label>
+          <input type="text" formControlName="title" placeholder="¿Qué imprime esta consulta?" />
+        </div>
+
+        <div class="ad-field">
+          <label>Enunciado</label>
+          <textarea formControlName="promptMarkdown" placeholder="Describe el contexto…"></textarea>
+        </div>
+
+        <div class="ad-field">
+          <label>Código</label>
+          <textarea formControlName="codeSnippet" placeholder="SELECT ..."></textarea>
+        </div>
+
+        <div class="ad-field">
+          <label>Respuesta esperada</label>
+          <input type="text" formControlName="expectedAnswer" placeholder="Ej. 34" />
+        </div>
+
+        <button type="submit" class="ad-btn" [disabled]="saving()">
+          {{ saving() ? 'Creando…' : 'Crear borrador' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="ad-section">
+      <h2>Banco de preguntas</h2>
+      <div class="ad-log">
+        @for (challenge of challenges(); track challenge.id) {
+          <div class="ad-row">
+            <span
+              class="ad-badge"
+              [class.ad-badge--draft]="challenge.status === 'draft'"
+              [class.ad-badge--published]="challenge.status === 'published'"
+            >
+              {{ challenge.status === 'published' ? 'Publicado' : 'Borrador' }}
+            </span>
+            <span class="ad-row__title">{{ challenge.title }}</span>
+            <span class="ad-row__meta">{{ categoryName(challenge.categoryId) }} · {{ difficultyName(challenge.difficultyId) }}</span>
+            @if (challenge.status === 'draft') {
+              <button
+                type="button"
+                class="ad-btn ad-btn--sm"
+                (click)="publish(challenge.id)"
+                [disabled]="publishingId() === challenge.id"
+              >
+                {{ publishingId() === challenge.id ? 'Publicando…' : 'Publicar' }}
+              </button>
+            }
+          </div>
+        } @empty {
+          <p class="ad-empty">Todavía no hay preguntas creadas.</p>
+        }
+      </div>
+    </section>
+  </div>
+</app-screen-frame>

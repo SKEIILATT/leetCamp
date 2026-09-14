@@ -1,0 +1,63 @@
+<app-screen-frame filename="admin.taxonomy">
+  <div class="ad-content">
+    <section class="ad-section">
+      <h2>Categorías</h2>
+
+      @if (categoryError()) {
+        <p class="ad-error">{{ categoryError() }}</p>
+      }
+
+      <div class="ad-log">
+        @for (category of categories(); track category.id) {
+          <div class="ad-row">
+            <span class="ad-chip">{{ category.name }}</span>
+          </div>
+        } @empty {
+          <p class="ad-empty">Todavía no hay categorías.</p>
+        }
+      </div>
+
+      <form [formGroup]="categoryForm" (ngSubmit)="submitCategory()" class="ad-form" novalidate>
+        <div class="ad-field ad-field--grow">
+          <label>Nombre</label>
+          <input type="text" formControlName="name" placeholder="Ej. SQL" />
+        </div>
+        <button type="submit" class="ad-btn" [disabled]="savingCategory()">
+          {{ savingCategory() ? 'Creando…' : 'Agregar categoría' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="ad-section">
+      <h2>Dificultades</h2>
+
+      @if (difficultyError()) {
+        <p class="ad-error">{{ difficultyError() }}</p>
+      }
+
+      <div class="ad-log">
+        @for (difficulty of difficulties(); track difficulty.id) {
+          <div class="ad-row">
+            <span class="ad-chip">{{ difficulty.name }} · nivel {{ difficulty.level }}</span>
+          </div>
+        } @empty {
+          <p class="ad-empty">Todavía no hay dificultades.</p>
+        }
+      </div>
+
+      <form [formGroup]="difficultyForm" (ngSubmit)="submitDifficulty()" class="ad-form" novalidate>
+        <div class="ad-field">
+          <label>Nombre</label>
+          <input type="text" formControlName="name" placeholder="Ej. Fácil" />
+        </div>
+        <div class="ad-field">
+          <label>Nivel</label>
+          <input type="number" formControlName="level" min="1" />
+        </div>
+        <button type="submit" class="ad-btn" [disabled]="savingDifficulty()">
+          {{ savingDifficulty() ? 'Creando…' : 'Agregar dificultad' }}
+        </button>
+      </form>
+    </section>
+  </div>
+</app-screen-frame>

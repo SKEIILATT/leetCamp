@@ -1,0 +1,17 @@
+@use '../admin-common' as *;
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+.ad-form--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.ad-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}

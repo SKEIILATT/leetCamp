@@ -1,0 +1,40 @@
+<app-screen-frame filename="admin.usuarios">
+  <div class="ad-content">
+    <section class="ad-section">
+      <h2>Usuarios</h2>
+
+      @if (errorMessage()) {
+        <p class="ad-error">{{ errorMessage() }}</p>
+      }
+
+      @if (state() === 'loading') {
+        <p class="ad-empty">Cargando usuarios…</p>
+      } @else if (state() === 'error') {
+        <p class="ad-empty">No pudimos cargar la lista de usuarios.</p>
+      } @else {
+        <div class="ad-log">
+          @for (user of users(); track user.id) {
+            <div class="ad-row">
+              <span class="ad-badge" [class.ad-badge--active]="user.isActive" [class.ad-badge--inactive]="!user.isActive">
+                {{ user.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+              <span class="ad-row__title">{{ user.displayName }}</span>
+              <span class="ad-row__meta">{{ user.email }} · {{ roleName(user.roleId) }}</span>
+              <button
+                type="button"
+                class="ad-btn ad-btn--sm"
+                [class.ad-btn--ghost]="user.isActive"
+                (click)="toggleActive(user)"
+                [disabled]="updatingId() === user.id"
+              >
+                {{ updatingId() === user.id ? 'Guardando…' : user.isActive ? 'Desactivar' : 'Reactivar' }}
+              </button>
+            </div>
+          } @empty {
+            <p class="ad-empty">No hay usuarios registrados.</p>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</app-screen-frame>

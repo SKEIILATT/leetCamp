@@ -127,10 +127,14 @@ services:
       start_period: 10s
 
   # ── frontend ────────────────────────────────────────────────────────────────
-  # nginx serving dist/. No Node runtime here, and no runtime environment
-  # variables at all — the VITE_* values are baked into the JavaScript at image
-  # build time. Changing them requires REBUILDING THE IMAGE, not restarting the
-  # container.
+  # nginx serving the Angular build output. No Node runtime here, and no
+  # runtime environment variables at all — the frontend is a standalone npm
+  # project (NOT the pnpm workspace's `apps/web`, which never existed in this
+  # repo — see docs/DECISIONS.md, "Frontend: proyecto Angular independiente").
+  # It lives at `../../frontend` relative to this file, is built with plain
+  # `npm`/`ng build`, and has no build-time config to bake in: its production
+  # `environment.ts` already points at the relative `/api/v1`, which works
+  # because Caddy puts web and api behind the same origin (see Caddyfile).
   web:
     # The default is the tag `up --build` gives a locally built image. On the
     # server, `deploy/.env` points this at the registry reference and
@@ -141,28 +145,24 @@ services:
     # `build` only applies with `up --build` / `docker compose build` (local
     # verification). On the server the images come from the registry.
     build:
-      # ⚠ `..` IS THE REPOSITORY ROOT, not apps/web — see the header note on path
-      # resolution. pnpm workspace; the root lockfile governs. See .dockerignore.
-      context: ..
-      dockerfile: apps/web/Dockerfile
-      args:
-        # Baked into the bundle. PUBLIC by definition, so passing them as build
-        # args exposes nothing new. A server secret here would be written into
-        # the layer history — never.
-        #
-        # The `:?` form fails the build with that message when the variable is
-        # missing, instead of quietly baking an empty string into the bundle and
-        # producing a frontend that cannot authenticate.
-        VITE_AUTH_CLIENT_ID: ${VITE_AUTH_CLIENT_ID:?missing VITE_AUTH_CLIENT_ID for the frontend image}
-        VITE_AUTH_ISSUER: ${VITE_AUTH_ISSUER:?missing VITE_AUTH_ISSUER for the frontend image}
+      # ⚠ `../../frontend`, NOT `..` — this compose file lives in
+      # `backend/deploy/`, and the frontend is a sibling of `backend/` at the
+      # repository root, not a workspace member inside it. `frontend/` is
+      # itself the build context (its own Dockerfile there expects that).
+      context: ../../frontend
+      dockerfile: Dockerfile
     networks:
       - internal
     healthcheck:
       # ⚠ `/nginx-health` AND NOT `/`. With the SPA fallback active, ANY path
-      # returns 200, so a probe against `/` could not distinguish a healthy nginx
-      # from one whose static directory is empty. This route exists solely to be
-      # probed. See apps/web/nginx.conf.
-      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:80/nginx-health']
+      # returns 200, so a probe against `/` could not distinguish a healthy
+      # nginx from one whose static directory is empty. This route exists
+      # solely to be probed. See frontend/nginx.conf.
+      #
+      # `wget`, not `curl`: the nginx:alpine base ships busybox wget but no
+      # curl, and installing one just for a healthcheck is a package more than
+      # is needed.
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:80/nginx-health']
       interval: 15s
       timeout: 5s
       retries: 3
