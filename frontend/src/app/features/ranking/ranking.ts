@@ -1,14 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { forkJoin } from 'rxjs';
 
 import { MeService } from '../../core/me.service';
 import { RankingEntry, RankingService } from '../../core/ranking.service';
+import { ScreenFrame } from '../screen-frame/screen-frame';
 
 type ViewState = 'loading' | 'error' | 'empty' | 'ready';
 
 @Component({
   selector: 'app-ranking',
-  imports: [],
+  imports: [ScreenFrame],
   templateUrl: './ranking.html',
   styleUrl: './ranking.scss',
 })
@@ -19,6 +20,9 @@ export class Ranking {
   protected readonly state = signal<ViewState>('loading');
   protected readonly entries = signal<RankingEntry[]>([]);
   protected readonly myUserId = signal<string | null>(null);
+
+  protected readonly podium = computed(() => this.entries().slice(0, 3));
+  protected readonly rest = computed(() => this.entries().slice(3));
 
   constructor() {
     forkJoin({

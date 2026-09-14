@@ -1,0 +1,41 @@
+<app-screen-frame filename="perfil.config">
+  <div class="pf-content">
+    <section class="pf-section pf-hero">
+      <div class="pf-avatar">{{ initials() }}</div>
+      <div class="pf-identity">
+        <span class="pf-email">{{ me()?.email ?? 'Cargando…' }}</span>
+        <span class="pf-role">{{ me()?.role === 'admin' ? 'Administrador' : 'Estudiante' }}</span>
+      </div>
+    </section>
+
+    <section class="pf-section">
+      <h2>Personalización</h2>
+      <div class="pf-features">
+        <div class="pf-feature">
+          <span class="pf-feature__icon">🧑‍🎨</span>
+          <div class="pf-feature__text">
+            <strong>Crea tu avatar</strong>
+            <p>Un editor de avatares estilo Mii de Wii.</p>
+          </div>
+          <span class="pf-badge">Próximamente</span>
+        </div>
+        <div class="pf-feature">
+          <span class="pf-feature__icon">✏️</span>
+          <div class="pf-feature__text">
+            <strong>Editar nombre público</strong>
+            <p>Cambia cómo apareces en el ranking.</p>
+          </div>
+          <span class="pf-badge">Próximamente</span>
+        </div>
+        <div class="pf-feature">
+          <span class="pf-feature__icon">🔔</span>
+          <div class="pf-feature__text">
+            <strong>Notificaciones</strong>
+            <p>Recordatorio diario para no romper tu racha.</p>
+          </div>
+          <span class="pf-badge">Próximamente</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</app-screen-frame>

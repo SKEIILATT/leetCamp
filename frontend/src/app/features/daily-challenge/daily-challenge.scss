@@ -1,58 +1,99 @@
 :host {
   display: block;
+  height: 100%;
 }
 
-.dc-status {
+.ce-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
   font-family: var(--lc-font-body);
   color: var(--lc-ink);
-}
-
-.dc-card {
-  background: var(--lc-white);
-  border: 3px solid var(--lc-ink);
-  border-radius: 14px;
-  box-shadow: 8px 8px 0 var(--lc-ink);
-  padding: 28px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  max-width: 640px;
-  box-sizing: border-box;
-
-  h1 {
-    margin: 0;
-    font-family: var(--lc-font-display);
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: var(--lc-ink);
-  }
+  text-align: center;
 
   p {
     margin: 0;
   }
 }
 
-.dc-prompt {
-  font-size: 0.98rem;
-  line-height: 1.6;
+.ce-pane {
+  box-sizing: border-box;
+  padding: 40px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ce-pane--problem {
+  flex: 1 1 60%;
+  min-width: 320px;
+  border-right: 4px solid var(--lc-ink);
+
+  h1 {
+    margin: 0;
+    font-family: var(--lc-font-display);
+    font-weight: 700;
+    font-size: 1.9rem;
+    color: var(--lc-ink);
+  }
+}
+
+.ce-prompt {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
   color: var(--lc-ink);
   white-space: pre-wrap;
+  max-width: 68ch;
 }
 
-.dc-code {
-  margin: 0;
+.ce-code {
   background: var(--lc-ink);
-  color: var(--lc-mint);
+  border-radius: 10px;
+  padding: 16px 0;
   font-family: var(--lc-font-mono);
-  font-size: 0.88rem;
-  line-height: 1.5;
-  padding: 14px 16px;
-  border-radius: 8px;
+  font-size: 0.95rem;
   overflow-x: auto;
-  white-space: pre;
 }
 
-.dc-error {
+.ce-code-line {
+  display: flex;
+  gap: 16px;
+  padding: 2px 20px;
+
+  &__num {
+    color: rgba(255, 255, 255, 0.3);
+    user-select: none;
+    min-width: 1.5em;
+    text-align: right;
+  }
+
+  &__text {
+    color: var(--lc-mint);
+    white-space: pre;
+  }
+}
+
+.ce-pane--answer {
+  flex: 1 1 40%;
+  min-width: 280px;
+  background: var(--lc-mint);
+  justify-content: center;
+}
+
+.ce-answer-label {
+  font-family: var(--lc-font-mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--lc-ink);
+  opacity: 0.7;
+}
+
+.ce-error {
+  margin: 0;
   padding: 10px 12px;
   border: 2px solid #8a1f1f;
   border-radius: 8px;
@@ -62,76 +103,147 @@
   font-weight: 600;
 }
 
-.dc-form {
+.ce-form {
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ce-terminal-input {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  background: var(--lc-white);
+  border: 3px solid var(--lc-ink);
+  border-radius: 10px;
+  padding: 14px 16px;
+
+  .ce-prompt-symbol {
+    font-family: var(--lc-font-mono);
+    font-weight: 700;
+    color: var(--lc-blue);
+  }
 
   input {
     flex: 1;
-    min-width: 200px;
-    border: 2.5px solid var(--lc-ink);
-    border-radius: 8px;
-    padding: 11px 13px;
-    font-size: 0.95rem;
-    font-family: inherit;
-    color: var(--lc-ink);
-    background: var(--lc-white);
+    min-width: 0;
+    border: none;
     outline: none;
-    box-sizing: border-box;
-
-    &:focus {
-      border-color: var(--lc-blue);
-      box-shadow: 3px 3px 0 var(--lc-blue);
-    }
-  }
-
-  button {
-    background: var(--lc-blue);
-    color: #fff;
-    border: 2.5px solid var(--lc-ink);
-    border-radius: 8px;
-    padding: 11px 22px;
-    font-family: var(--lc-font-display);
-    font-weight: 700;
-    font-size: 0.92rem;
-    cursor: pointer;
-    box-shadow: 4px 4px 0 var(--lc-ink);
-    transition: transform 0.08s ease, box-shadow 0.08s ease;
-
-    &:hover:not(:disabled) {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0 var(--lc-ink);
-    }
-
-    &:active:not(:disabled) {
-      transform: translate(4px, 4px);
-      box-shadow: 0 0 0 var(--lc-ink);
-    }
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
+    font-family: var(--lc-font-mono);
+    font-size: 1rem;
+    color: var(--lc-ink);
+    background: transparent;
   }
 }
 
-.dc-result {
+.ce-run-btn {
+  background: var(--lc-blue);
+  color: #fff;
+  border: 3px solid var(--lc-ink);
+  border-radius: 10px;
+  padding: 15px 24px;
+  font-family: var(--lc-font-display);
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--lc-ink);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+
+  &:hover:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 3px 3px 0 var(--lc-ink);
+  }
+
+  &:active:not(:disabled) {
+    transform: translate(5px, 5px);
+    box-shadow: 0 0 0 var(--lc-ink);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+}
+
+.ce-result-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 24px;
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+}
+
+.ce-result-badge {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  border: 4px solid var(--lc-ink);
+  box-shadow: 6px 6px 0 var(--lc-ink);
 
   &--ok {
+    background: #e4f8ed;
     color: #1d8a57;
   }
 
   &--fail {
+    background: #ffe8e8;
     color: #8a1f1f;
   }
 }
 
-.dc-result-meta {
+.ce-result-pane h2 {
+  margin: 0;
+  font-family: var(--lc-font-display);
+  font-size: 1.6rem;
+  color: var(--lc-ink);
+}
+
+.ce-result-points {
+  font-family: var(--lc-font-mono);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--lc-ink);
+}
+
+.ce-result-meta {
   font-family: var(--lc-font-mono);
   font-size: 0.85rem;
   color: var(--lc-ink);
   opacity: 0.75;
+}
+
+.ce-result-cta {
+  margin-top: 10px;
+  background: var(--lc-blue);
+  color: #fff;
+  border: 3px solid var(--lc-ink);
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-family: var(--lc-font-display);
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-decoration: none;
+  box-shadow: 4px 4px 0 var(--lc-ink);
+}
+
+@media (max-width: 760px) {
+  .ce-pane--problem {
+    border-right: none;
+    border-bottom: 4px solid var(--lc-ink);
+  }
+
+  .ce-pane {
+    padding: 28px 24px;
+  }
 }

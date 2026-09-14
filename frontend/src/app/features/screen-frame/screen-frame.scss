@@ -1,0 +1,64 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.sf-frame {
+  height: 100%;
+  min-height: 560px;
+  background: var(--lc-white);
+  border: 4px solid var(--lc-ink);
+  border-radius: 16px;
+  box-shadow: 12px 12px 0 var(--lc-ink);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sf-header {
+  background: var(--lc-ink);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.sf-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.sf-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+
+  &--r {
+    background: #ff6b6b;
+  }
+
+  &--y {
+    background: #ffd166;
+  }
+
+  &--g {
+    background: #3dd68c;
+  }
+}
+
+.sf-filename {
+  font-family: var(--lc-font-mono);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.sf-body {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  overflow: auto;
+  min-height: 0;
+}

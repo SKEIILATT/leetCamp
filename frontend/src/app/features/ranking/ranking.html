@@ -1,39 +1,57 @@
-@if (state() === 'loading') {
-  <p class="rk-status">Cargando el ranking…</p>
-} @else if (state() === 'error') {
-  <div class="rk-card">
-    <p>No pudimos cargar el ranking. Intenta de nuevo más tarde.</p>
-  </div>
-} @else if (state() === 'empty') {
-  <div class="rk-card">
-    <p>Todavía nadie tiene puntos — sé el primero en resolver el reto de hoy.</p>
-  </div>
-} @else {
-  <div class="rk-card">
-    <div class="rk-list">
-      @for (entry of entries(); track entry.userId) {
-        <div class="rk-row" [class.rk-row--me]="entry.userId === myUserId()">
-          <span class="rk-row__pos">
-            @switch (entry.position) {
-              @case (1) {
-                🥇
-              }
-              @case (2) {
-                🥈
-              }
-              @case (3) {
-                🥉
-              }
-              @default {
-                {{ entry.position }}
-              }
-            }
-          </span>
-          <span class="rk-row__name">{{ entry.displayName }}</span>
-          <span class="rk-row__streak">🔥 {{ entry.currentStreak }}</span>
-          <span class="rk-row__points">{{ entry.totalPoints }} pts</span>
+<app-screen-frame filename="ranking.leaderboard">
+  @if (state() === 'loading') {
+    <div class="rk-center">
+      <p>Cargando el ranking…</p>
+    </div>
+  } @else if (state() === 'error') {
+    <div class="rk-center">
+      <p>No pudimos cargar el ranking. Intenta de nuevo más tarde.</p>
+    </div>
+  } @else if (state() === 'empty') {
+    <div class="rk-center">
+      <p>Todavía nadie tiene puntos — sé el primero en resolver el reto de hoy.</p>
+    </div>
+  } @else {
+    <div class="rk-content">
+      <div class="rk-podium">
+        @if (podium()[1]; as second) {
+          <div class="rk-pedestal rk-pedestal--2" [class.rk-pedestal--me]="second.userId === myUserId()">
+            <span class="rk-pedestal__medal">🥈</span>
+            <span class="rk-pedestal__name">{{ second.displayName }}</span>
+            <span class="rk-pedestal__points">{{ second.totalPoints }} pts</span>
+            <div class="rk-pedestal__block">2</div>
+          </div>
+        }
+        @if (podium()[0]; as first) {
+          <div class="rk-pedestal rk-pedestal--1" [class.rk-pedestal--me]="first.userId === myUserId()">
+            <span class="rk-pedestal__medal">🥇</span>
+            <span class="rk-pedestal__name">{{ first.displayName }}</span>
+            <span class="rk-pedestal__points">{{ first.totalPoints }} pts</span>
+            <div class="rk-pedestal__block">1</div>
+          </div>
+        }
+        @if (podium()[2]; as third) {
+          <div class="rk-pedestal rk-pedestal--3" [class.rk-pedestal--me]="third.userId === myUserId()">
+            <span class="rk-pedestal__medal">🥉</span>
+            <span class="rk-pedestal__name">{{ third.displayName }}</span>
+            <span class="rk-pedestal__points">{{ third.totalPoints }} pts</span>
+            <div class="rk-pedestal__block">3</div>
+          </div>
+        }
+      </div>
+
+      @if (rest().length > 0) {
+        <div class="rk-log">
+          @for (entry of rest(); track entry.userId) {
+            <div class="rk-row" [class.rk-row--me]="entry.userId === myUserId()">
+              <span class="rk-row__pos">{{ entry.position }}</span>
+              <span class="rk-row__name">{{ entry.displayName }}</span>
+              <span class="rk-row__streak">🔥 {{ entry.currentStreak }}</span>
+              <span class="rk-row__points">{{ entry.totalPoints }} pts</span>
+            </div>
+          }
         </div>
       }
     </div>
-  </div>
-}
+  }
+</app-screen-frame>

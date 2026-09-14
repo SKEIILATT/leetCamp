@@ -1,33 +1,58 @@
-@if (state() === 'loading') {
-  <p class="dc-status">Cargando el reto de hoy…</p>
-} @else if (state() === 'no-challenge') {
-  <div class="dc-card">
-    <p>{{ errorMessage() ?? 'No hay reto programado para hoy. Vuelve mañana.' }}</p>
-  </div>
-} @else if (challenge(); as c) {
-  <div class="dc-card">
-    <h1>{{ c.title }}</h1>
-    <p class="dc-prompt">{{ c.promptMarkdown }}</p>
-    <pre class="dc-code">{{ c.codeSnippet }}</pre>
-
+<app-screen-frame filename="reto-del-dia.sql">
+  @if (state() === 'loading') {
+    <div class="ce-center">
+      <p>Cargando el reto de hoy…</p>
+    </div>
+  } @else if (state() === 'no-challenge') {
+    <div class="ce-center">
+      <p>{{ errorMessage() ?? 'No hay reto programado para hoy. Vuelve mañana.' }}</p>
+    </div>
+  } @else if (challenge(); as c) {
     @if (state() === 'result' && result(); as r) {
-      @if (r.isCorrect) {
-        <p class="dc-result dc-result--ok">✓ ¡Correcto! Ganaste {{ r.pointsEarned }} puntos.</p>
-      } @else {
-        <p class="dc-result dc-result--fail">✗ No era la respuesta correcta. Sigue así, vuelve mañana.</p>
-      }
-      <p class="dc-result-meta">Racha actual: {{ r.currentStreak }} días · Puntos totales: {{ r.totalPoints }}</p>
+      <div class="ce-result-pane">
+        @if (r.isCorrect) {
+          <div class="ce-result-badge ce-result-badge--ok">✓</div>
+          <h2>¡Correcto!</h2>
+          <p class="ce-result-points">+{{ r.pointsEarned }} puntos</p>
+        } @else {
+          <div class="ce-result-badge ce-result-badge--fail">✗</div>
+          <h2>No era la respuesta correcta</h2>
+          <p class="ce-result-points">Sigue así, vuelve mañana.</p>
+        }
+        <p class="ce-result-meta">🔥 Racha actual: {{ r.currentStreak }} días · {{ r.totalPoints }} puntos totales</p>
+        <a routerLink="/dashboard" class="ce-result-cta">Ver mi progreso →</a>
+      </div>
     } @else {
-      @if (errorMessage()) {
-        <p class="dc-error">{{ errorMessage() }}</p>
-      }
+      <div class="ce-pane ce-pane--problem">
+        <h1>{{ c.title }}</h1>
+        <p class="ce-prompt">{{ c.promptMarkdown }}</p>
+        <div class="ce-code">
+          @for (line of codeLines(); track $index) {
+            <div class="ce-code-line">
+              <span class="ce-code-line__num">{{ $index + 1 }}</span>
+              <span class="ce-code-line__text">{{ line }}</span>
+            </div>
+          }
+        </div>
+      </div>
 
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="dc-form" novalidate>
-        <input type="text" formControlName="answer" placeholder="Tu respuesta…" autocomplete="off" />
-        <button type="submit" [disabled]="submitting()">
-          {{ submitting() ? 'Enviando…' : 'Enviar' }}
-        </button>
-      </form>
+      <div class="ce-pane ce-pane--answer">
+        <span class="ce-answer-label">Tu respuesta</span>
+
+        @if (errorMessage()) {
+          <p class="ce-error">{{ errorMessage() }}</p>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="ce-form" novalidate>
+          <div class="ce-terminal-input">
+            <span class="ce-prompt-symbol">&gt;</span>
+            <input type="text" formControlName="answer" placeholder="Escribe aquí…" autocomplete="off" />
+          </div>
+          <button type="submit" class="ce-run-btn" [disabled]="submitting()">
+            {{ submitting() ? 'Ejecutando…' : '▶ Ejecutar respuesta' }}
+          </button>
+        </form>
+      </div>
     }
-  </div>
-}
+  }
+</app-screen-frame>

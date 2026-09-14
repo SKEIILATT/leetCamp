@@ -1,10 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
+import { RouterLink } from '@angular/router';
 
 import { StreakService } from '../../core/streak.service';
 import { TodayChallengeService } from '../../core/today-challenge.service';
 import type { paths } from '../../generated/api.d.ts';
+import { ScreenFrame } from '../screen-frame/screen-frame';
 
 type TodayChallenge = paths['/api/v1/daily-challenge']['get']['responses'][200]['content']['application/json'];
 type SubmitAttemptResponse = paths['/api/v1/attempts']['post']['responses'][201]['content']['application/json'];
@@ -13,7 +15,7 @@ type ViewState = 'loading' | 'no-challenge' | 'ready' | 'result';
 
 @Component({
   selector: 'app-daily-challenge',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink, ScreenFrame],
   templateUrl: './daily-challenge.html',
   styleUrl: './daily-challenge.scss',
 })
@@ -27,6 +29,8 @@ export class DailyChallenge {
   protected readonly result = signal<SubmitAttemptResponse | null>(null);
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+
+  protected readonly codeLines = computed(() => (this.challenge()?.codeSnippet ?? '').split('\n'));
 
   protected readonly form = this.fb.nonNullable.group({
     answer: ['', [Validators.required, Validators.maxLength(2000)]],

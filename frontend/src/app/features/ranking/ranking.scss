@@ -1,55 +1,132 @@
 :host {
   display: block;
+  height: 100%;
 }
 
-.rk-status {
-  color: var(--lc-ink);
+.rk-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
   font-family: var(--lc-font-body);
-}
-
-.rk-card {
-  background: var(--lc-white);
-  border: 3px solid var(--lc-ink);
-  border-radius: 14px;
-  box-shadow: 8px 8px 0 var(--lc-ink);
-  padding: 20px 24px;
-  max-width: 560px;
-  box-sizing: border-box;
   color: var(--lc-ink);
+  text-align: center;
 
   p {
     margin: 0;
   }
 }
 
-.rk-list {
+.rk-content {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.rk-podium {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 18px;
+  padding: 44px 24px 0;
+  background: var(--lc-mint);
+  border-bottom: 3px solid var(--lc-ink);
+}
+
+.rk-pedestal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 140px;
+
+  &--me .rk-pedestal__name {
+    text-decoration: underline;
+  }
+}
+
+.rk-pedestal__medal {
+  font-size: 1.8rem;
+}
+
+.rk-pedestal__name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--lc-ink);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rk-pedestal__points {
+  font-family: var(--lc-font-mono);
+  font-size: 0.78rem;
+  color: var(--lc-ink);
+  opacity: 0.75;
+  margin-bottom: 6px;
+}
+
+.rk-pedestal__block {
+  width: 100%;
+  border: 3px solid var(--lc-ink);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10px;
+  font-family: var(--lc-font-display);
+  font-weight: 800;
+  font-size: 1.6rem;
+  color: #fff;
+}
+
+.rk-pedestal--1 .rk-pedestal__block {
+  height: 130px;
+  background: var(--lc-blue);
+}
+
+.rk-pedestal--2 .rk-pedestal__block {
+  height: 92px;
+  background: var(--lc-sky);
+}
+
+.rk-pedestal--3 .rk-pedestal__block {
+  height: 66px;
+  background: var(--lc-violet);
+}
+
+.rk-log {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .rk-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  box-sizing: border-box;
+  gap: 16px;
+  padding: 12px 28px;
+  border-bottom: 1.5px solid rgba(3, 5, 65, 0.12);
 
   &--me {
     background: var(--lc-mint);
-    border-color: var(--lc-ink);
     font-weight: 700;
   }
 }
 
 .rk-row__pos {
-  width: 28px;
   flex-shrink: 0;
+  width: 28px;
   font-family: var(--lc-font-mono);
   font-weight: 700;
   text-align: center;
+  color: var(--lc-ink);
 }
 
 .rk-row__name {
@@ -58,20 +135,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--lc-ink);
 }
 
 .rk-row__streak {
+  flex-shrink: 0;
   font-family: var(--lc-font-mono);
   font-size: 0.85rem;
+  color: var(--lc-ink);
   opacity: 0.8;
-  flex-shrink: 0;
 }
 
 .rk-row__points {
+  flex-shrink: 0;
+  min-width: 70px;
+  text-align: right;
   font-family: var(--lc-font-mono);
   font-weight: 700;
   font-size: 0.9rem;
-  flex-shrink: 0;
-  min-width: 64px;
-  text-align: right;
+  color: var(--lc-ink);
 }

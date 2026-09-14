@@ -1,0 +1,56 @@
+<app-screen-frame filename="dashboard.stats">
+  <div class="pp-content">
+    <section class="pp-section">
+      <h2>Tu progreso</h2>
+      <div class="pp-stats">
+        <div class="pp-stat">
+          <span class="pp-stat__value">{{ streak()?.currentStreak ?? 0 }}</span>
+          <span class="pp-stat__label">🔥 Racha actual</span>
+        </div>
+        <div class="pp-stat">
+          <span class="pp-stat__value">{{ streak()?.longestStreak ?? 0 }}</span>
+          <span class="pp-stat__label">🏆 Mejor racha</span>
+        </div>
+        <div class="pp-stat">
+          <span class="pp-stat__value">{{ streak()?.totalPoints ?? 0 }}</span>
+          <span class="pp-stat__label">Puntos totales</span>
+        </div>
+        <div class="pp-stat">
+          <span class="pp-stat__value">{{ accuracy() !== null ? accuracy() + '%' : '—' }}</span>
+          <span class="pp-stat__label">Aciertos</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2>Últimos 30 días</h2>
+      <div class="pp-heatmap">
+        @for (day of heatmap(); track day.date) {
+          <span
+            class="pp-heatmap__day"
+            [class.pp-heatmap__day--correct]="day.status === 'correct'"
+            [class.pp-heatmap__day--incorrect]="day.status === 'incorrect'"
+            [title]="day.label"
+          ></span>
+        }
+      </div>
+      <div class="pp-heatmap-legend">
+        <span class="pp-legend-dot pp-legend-dot--correct"></span> Acertaste
+        <span class="pp-legend-dot pp-legend-dot--incorrect"></span> Participaste
+        <span class="pp-legend-dot"></span> Sin actividad
+      </div>
+    </section>
+
+    <section class="pp-section">
+      <h2>Insignias</h2>
+      <div class="pp-badges">
+        @for (badge of badges(); track badge.label) {
+          <div class="pp-badge" [class.pp-badge--locked]="!badge.unlocked">
+            <span class="pp-badge__icon">{{ badge.icon }}</span>
+            <span class="pp-badge__label">{{ badge.label }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</app-screen-frame>
