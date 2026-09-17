@@ -53,6 +53,7 @@ describe('getMyHistory', () => {
         list: async () => ok([challenge]),
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
+        updateDraft: async () => ok(challenge),
       },
     });
 
@@ -82,6 +83,7 @@ describe('getMyHistory', () => {
         list: async () => ok([challenge]),
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
+        updateDraft: async () => ok(challenge),
       },
     });
 
@@ -109,6 +111,7 @@ describe('getMyHistory', () => {
         list: async () => ok([challenge]),
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
+        updateDraft: async () => ok(challenge),
       },
     });
 

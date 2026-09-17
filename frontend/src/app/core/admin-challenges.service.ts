@@ -9,6 +9,8 @@ export type AdminChallenge =
   paths['/api/v1/admin/challenges']['get']['responses'][200]['content']['application/json'][number];
 type CreateChallengeRequest =
   paths['/api/v1/admin/challenges']['post']['requestBody']['content']['application/json'];
+type UpdateDraftChallengeRequest =
+  paths['/api/v1/admin/challenges/{id}']['patch']['requestBody']['content']['application/json'];
 
 @Injectable({ providedIn: 'root' })
 export class AdminChallengesService {
@@ -21,6 +23,10 @@ export class AdminChallengesService {
 
   createChallenge(input: CreateChallengeRequest): Observable<{ challengeId: string }> {
     return this.http.post<{ challengeId: string }>(`${environment.apiBaseUrl}/admin/challenges`, input);
+  }
+
+  updateDraftChallenge(id: string, input: UpdateDraftChallengeRequest): Observable<{ challengeId: string }> {
+    return this.http.patch<{ challengeId: string }>(`${environment.apiBaseUrl}/admin/challenges/${id}`, input);
   }
 
   publishChallenge(id: string): Observable<{ challengeId: string; status: 'published' }> {

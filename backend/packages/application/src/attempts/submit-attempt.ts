@@ -15,6 +15,7 @@ import {
   type DifficultyRepository,
   type IdGenerator,
   type Result,
+  type TestCaseResult,
   type UserRepository,
   type ValidationEngine,
 } from '@leetcamp/domain';
@@ -55,6 +56,10 @@ export interface SubmitAttemptOutput {
   readonly currentStreak: number;
   readonly longestStreak: number;
   readonly totalPoints: number;
+  /** Only present for a `type: 'code'` challenge — see `ValidationOutcome`. */
+  readonly testResults?: readonly TestCaseResult[];
+  readonly compileError?: string;
+  readonly runtimeError?: string;
 }
 
 /**
@@ -95,6 +100,20 @@ export function makeSubmitAttempt(
 
     const validated = await deps.validationEngine.validate(challenge.value, input.answer);
     if (!validated.ok) return err(validated.error);
+
+    // `undefined` for a prediction attempt (none of these three fields is
+    // ever set by that adapter) — built once here so both the persisted
+    // `Attempt` and the returned output agree on exactly the same value.
+    const judgeDetails =
+      validated.value.testResults !== undefined ||
+      validated.value.compileError !== undefined ||
+      validated.value.runtimeError !== undefined
+        ? {
+            ...(validated.value.testResults !== undefined ? { testResults: validated.value.testResults } : {}),
+            ...(validated.value.compileError !== undefined ? { compileError: validated.value.compileError } : {}),
+            ...(validated.value.runtimeError !== undefined ? { runtimeError: validated.value.runtimeError } : {}),
+          }
+        : undefined;
 
     const user = await deps.userRepository.findById(input.userId);
     if (!user.ok) return err(user.error);
@@ -145,6 +164,7 @@ export function makeSubmitAttempt(
         submittedAt,
         timeTakenSeconds,
         points: pointsEarned,
+        ...(judgeDetails !== undefined ? { judgeDetails } : {}),
       });
       if (!attempt.ok) return err(attempt.error);
 
@@ -167,6 +187,9 @@ export function makeSubmitAttempt(
       currentStreak: txResult.value.streak.currentStreak,
       longestStreak: txResult.value.streak.longestStreak,
       totalPoints: txResult.value.streak.totalPoints,
+      ...(validated.value.testResults !== undefined ? { testResults: validated.value.testResults } : {}),
+      ...(validated.value.compileError !== undefined ? { compileError: validated.value.compileError } : {}),
+      ...(validated.value.runtimeError !== undefined ? { runtimeError: validated.value.runtimeError } : {}),
     });
   };
 }

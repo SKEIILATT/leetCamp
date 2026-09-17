@@ -1,0 +1,21 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 220px;
+  border: 3px solid var(--lc-ink);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.ed-host {
+  height: 100%;
+}
+
+// CodeMirror inserts `.cm-editor` as a plain DOM node at runtime, outside
+// Angular's template compilation — it never gets the `_ngcontent` attribute
+// emulated encapsulation relies on, so a normal nested selector can never
+// match it. `::ng-deep` is the documented escape hatch for exactly this case
+// (a third-party widget's own DOM), not a workaround for our own markup.
+:host ::ng-deep .cm-editor {
+  height: 100%;
+}

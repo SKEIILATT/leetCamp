@@ -7,6 +7,7 @@ import {
   type CategoryRepository,
   type ChallengeRepository,
   type Clock,
+  type CodeLanguage,
   type DailyChallengeRepository,
   type DifficultyRepository,
   type Result,
@@ -28,16 +29,7 @@ export interface GetTodayChallengeDeps {
   readonly clock: Clock;
 }
 
-/**
- * The student-facing view of today's challenge.
- *
- * ⚠ NO `expectedAnswer` FIELD, ON PURPOSE. Unlike `Challenge` in
- * `@leetcamp/domain`, this type cannot even represent carrying the answer —
- * that is not a serialization choice made at the route, it is enforced by the
- * shape this use case returns. A student reading this response can never see
- * the answer before submitting one.
- */
-export interface PublicChallenge {
+interface PublicChallengeBase {
   readonly challengeId: string;
   readonly date: string;
   readonly categoryId: string;
@@ -46,9 +38,35 @@ export interface PublicChallenge {
   readonly difficultyName: string;
   readonly title: string;
   readonly promptMarkdown: string;
-  readonly codeSnippet: string;
   readonly publishedAt: Date;
 }
+
+/** A test case as the STUDENT sees it — `isHidden` is never sent (a hidden
+ * case's whole point is that its own flag does not leak either), only the
+ * two fields a non-hidden case has anything useful to show. */
+export interface PublicTestCase {
+  readonly input: string;
+  readonly expectedOutput: string;
+}
+
+/**
+ * The student-facing view of today's challenge.
+ *
+ * ⚠ NO `expectedAnswer` FIELD, and no HIDDEN test cases, ON PURPOSE. Unlike
+ * `Challenge` in `@leetcamp/domain`, this type cannot even represent carrying
+ * the prediction answer or a hidden case's input/output — that is not a
+ * serialization choice made at the route, it is enforced by the shape this
+ * use case returns. A student reading this response can never see the
+ * prediction answer before submitting one, nor a hidden test case's content.
+ */
+export type PublicChallenge =
+  | (PublicChallengeBase & { readonly type: 'prediction'; readonly codeSnippet: string })
+  | (PublicChallengeBase & {
+      readonly type: 'code';
+      readonly starterCode: string;
+      readonly language: CodeLanguage;
+      readonly visibleTestCases: readonly PublicTestCase[];
+    });
 
 export function makeGetTodayChallenge(
   deps: GetTodayChallengeDeps,
@@ -83,7 +101,7 @@ export function makeGetTodayChallenge(
       return err(repository('Challenge references a missing difficulty'));
     }
 
-    return ok({
+    const base = {
       challengeId: challenge.value.id,
       date: daily.value.date,
       categoryId: challenge.value.categoryId,
@@ -92,8 +110,24 @@ export function makeGetTodayChallenge(
       difficultyName: difficulty.value.name,
       title: challenge.value.title,
       promptMarkdown: challenge.value.promptMarkdown,
-      codeSnippet: challenge.value.codeSnippet,
       publishedAt: daily.value.publishedAt,
-    });
+    };
+
+    if (challenge.value.type === 'code') {
+      return ok({
+        ...base,
+        type: 'code',
+        starterCode: challenge.value.starterCode,
+        language: challenge.value.language,
+        // Hidden test cases are filtered out HERE, not left to the route
+        // schema to strip — same reasoning as the missing `expectedAnswer`
+        // field above.
+        visibleTestCases: challenge.value.testCases
+          .filter((testCase) => !testCase.isHidden)
+          .map((testCase) => ({ input: testCase.input, expectedOutput: testCase.expectedOutput })),
+      });
+    }
+
+    return ok({ ...base, type: 'prediction', codeSnippet: challenge.value.codeSnippet });
   };
 }

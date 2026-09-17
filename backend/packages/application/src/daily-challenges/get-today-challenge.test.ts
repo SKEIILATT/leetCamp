@@ -75,6 +75,7 @@ describe('getTodayChallenge', () => {
         list: async () => ok([challenge]),
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
+        updateDraft: async () => ok(challenge),
       },
       categoryRepository,
       difficultyRepository,
@@ -93,6 +94,56 @@ describe('getTodayChallenge', () => {
     expect(result.value.difficultyName).toBe('Fácil');
   });
 
+  it('never leaks a hidden test case\'s input/expected output for a code challenge', async () => {
+    const codeChallenge: Challenge = {
+      id: 'challenge-2',
+      categoryId: 'cat-1',
+      difficultyId: 'diff-1',
+      type: 'code',
+      title: 'Reverse a string',
+      promptMarkdown: 'prompt',
+      starterCode: 'function reverse(s) {}',
+      language: 'javascript',
+      testCases: [
+        { id: 'tc-1', input: 'abc', expectedOutput: 'cba', isHidden: false },
+        { id: 'tc-2', input: 'SECRET_INPUT', expectedOutput: 'SECRET_OUTPUT', isHidden: true },
+      ],
+      status: 'published',
+      createdBy: 'admin-1',
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-01T00:00:00Z'),
+    };
+
+    const getTodayChallenge = makeGetTodayChallenge({
+      dailyChallengeRepository: {
+        findByDate: async () => ok({ ...todaysEntry, challengeId: codeChallenge.id }),
+        list: async () => ok([todaysEntry]),
+        create: async () => ok(todaysEntry),
+      },
+      challengeRepository: {
+        findById: async () => ok(codeChallenge),
+        list: async () => ok([codeChallenge]),
+        create: async () => ok(codeChallenge),
+        updateStatus: async () => ok(codeChallenge),
+        updateDraft: async () => ok(codeChallenge),
+      },
+      categoryRepository,
+      difficultyRepository,
+      clock,
+    });
+
+    const result = await getTodayChallenge();
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('unreachable');
+    if (result.value.type !== 'code') throw new Error('expected a code challenge');
+    expect(result.value.visibleTestCases).toEqual([{ input: 'abc', expectedOutput: 'cba' }]);
+    expect(JSON.stringify(result.value)).not.toContain('SECRET_INPUT');
+    expect(JSON.stringify(result.value)).not.toContain('SECRET_OUTPUT');
+    expect(result.value.starterCode).toBe(codeChallenge.starterCode);
+    expect(result.value.language).toBe('javascript');
+  });
+
   it('answers NOT_FOUND when nothing is scheduled for today', async () => {
     const getTodayChallenge = makeGetTodayChallenge({
       dailyChallengeRepository: {
@@ -105,6 +156,7 @@ describe('getTodayChallenge', () => {
         list: async () => ok([challenge]),
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
+        updateDraft: async () => ok(challenge),
       },
       categoryRepository,
       difficultyRepository,
@@ -130,6 +182,7 @@ describe('getTodayChallenge', () => {
         list: async () => ok([challenge]),
         create: async () => ok(challenge),
         updateStatus: async () => ok(challenge),
+        updateDraft: async () => ok(challenge),
       },
       categoryRepository,
       difficultyRepository,

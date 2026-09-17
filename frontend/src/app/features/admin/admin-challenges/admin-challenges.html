@@ -1,11 +1,32 @@
 <app-screen-frame filename="admin.preguntas">
   <div class="ad-content">
     <section class="ad-section">
-      <h2>Nueva pregunta</h2>
+      <h2>{{ editingId() ? 'Editar borrador' : 'Nueva pregunta' }}</h2>
 
       @if (errorMessage()) {
         <p class="ad-error">{{ errorMessage() }}</p>
       }
+
+      <div class="ad-type-toggle">
+        <button
+          type="button"
+          class="ad-type-btn"
+          [class.ad-type-btn--active]="type() === 'prediction'"
+          [disabled]="editingId() !== null"
+          (click)="setType('prediction')"
+        >
+          Predicción
+        </button>
+        <button
+          type="button"
+          class="ad-type-btn"
+          [class.ad-type-btn--active]="type() === 'code'"
+          [disabled]="editingId() !== null"
+          (click)="setType('code')"
+        >
+          Código
+        </button>
+      </div>
 
       <form [formGroup]="form" (ngSubmit)="submit()" class="ad-form ad-form--stack" novalidate>
         <div class="ad-form-row">
@@ -31,7 +52,11 @@
 
         <div class="ad-field">
           <label>Título</label>
-          <input type="text" formControlName="title" placeholder="¿Qué imprime esta consulta?" />
+          <input
+            type="text"
+            formControlName="title"
+            [placeholder]="type() === 'code' ? 'Ej. Invierte un string' : '¿Qué imprime esta consulta?'"
+          />
         </div>
 
         <div class="ad-field">
@@ -39,19 +64,73 @@
           <textarea formControlName="promptMarkdown" placeholder="Describe el contexto…"></textarea>
         </div>
 
-        <div class="ad-field">
-          <label>Código</label>
-          <textarea formControlName="codeSnippet" placeholder="SELECT ..."></textarea>
-        </div>
+        @if (type() === 'prediction') {
+          <div [formGroup]="predictionForm" class="ad-form ad-form--stack">
+            <div class="ad-field">
+              <label>Código</label>
+              <textarea formControlName="codeSnippet" placeholder="SELECT ..."></textarea>
+            </div>
 
-        <div class="ad-field">
-          <label>Respuesta esperada</label>
-          <input type="text" formControlName="expectedAnswer" placeholder="Ej. 34" />
-        </div>
+            <div class="ad-field">
+              <label>Respuesta esperada</label>
+              <input type="text" formControlName="expectedAnswer" placeholder="Ej. 34" />
+            </div>
+          </div>
+        } @else {
+          <div [formGroup]="codeForm" class="ad-form ad-form--stack">
+            <div class="ad-field">
+              <label>Lenguaje</label>
+              <select formControlName="language">
+                @for (lang of languages; track lang) {
+                  <option [value]="lang">{{ lang }}</option>
+                }
+              </select>
+            </div>
 
-        <button type="submit" class="ad-btn" [disabled]="saving()">
-          {{ saving() ? 'Creando…' : 'Crear borrador' }}
-        </button>
+            <div class="ad-field">
+              <label>Código inicial (starter code)</label>
+              <app-code-editor formControlName="starterCode" [language]="codeForm.controls.language.value" />
+            </div>
+
+            <div class="ad-field">
+              <label>Test cases</label>
+              <div class="ad-testcases" formArrayName="testCases">
+                @for (tc of testCases.controls; track $index) {
+                  <div class="ad-testcase" [formGroupName]="$index">
+                    <div class="ad-testcase-row">
+                      <input type="text" formControlName="input" placeholder="Entrada" />
+                      <input type="text" formControlName="expectedOutput" placeholder="Salida esperada" />
+                    </div>
+                    <label class="ad-testcase-hidden">
+                      <input type="checkbox" formControlName="isHidden" />
+                      Oculto
+                    </label>
+                    <button
+                      type="button"
+                      class="ad-testcase-remove"
+                      [disabled]="testCases.length <= 1"
+                      (click)="removeTestCase($index)"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                }
+              </div>
+              <button type="button" class="ad-btn ad-btn--sm ad-btn--ghost" (click)="addTestCase()">
+                + Agregar test case
+              </button>
+            </div>
+          </div>
+        }
+
+        <div class="ad-form-actions">
+          <button type="submit" class="ad-btn" [disabled]="saving()">
+            {{ saving() ? 'Guardando…' : editingId() ? 'Guardar cambios' : 'Crear borrador' }}
+          </button>
+          @if (editingId()) {
+            <button type="button" class="ad-btn ad-btn--ghost" (click)="cancelEdit()">Cancelar</button>
+          }
+        </div>
       </form>
     </section>
 
@@ -68,8 +147,14 @@
               {{ challenge.status === 'published' ? 'Publicado' : 'Borrador' }}
             </span>
             <span class="ad-row__title">{{ challenge.title }}</span>
-            <span class="ad-row__meta">{{ categoryName(challenge.categoryId) }} · {{ difficultyName(challenge.difficultyId) }}</span>
+            <span class="ad-row__meta">
+              {{ categoryName(challenge.categoryId) }} · {{ difficultyName(challenge.difficultyId) }} ·
+              {{ challenge.type === 'code' ? 'código (' + challenge.language + ')' : 'predicción' }}
+            </span>
             @if (challenge.status === 'draft') {
+              <button type="button" class="ad-btn ad-btn--sm ad-btn--ghost" (click)="startEdit(challenge)">
+                Editar
+              </button>
               <button
                 type="button"
                 class="ad-btn ad-btn--sm"

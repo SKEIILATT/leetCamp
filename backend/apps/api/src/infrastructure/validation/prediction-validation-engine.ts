@@ -17,6 +17,12 @@ function normalize(value: string): string {
 export function createPredictionValidationEngine(): ValidationEngine {
   return {
     async validate(challenge: Challenge, answer: string): Promise<Result<ValidationOutcome>> {
+      // Unreachable through `createCompositeValidationEngine`, which only
+      // ever routes `type: 'prediction'` here — guarded anyway, same
+      // reasoning as the equivalent check in `judge0-validation-engine.ts`.
+      if (challenge.type !== 'prediction') {
+        return ok({ isCorrect: false });
+      }
       return ok({ isCorrect: normalize(answer) === normalize(challenge.expectedAnswer) });
     },
   };

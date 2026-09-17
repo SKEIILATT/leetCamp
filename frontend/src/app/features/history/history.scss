@@ -130,6 +130,14 @@
   opacity: 0.7;
 }
 
+.hs-row__answer--error {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-weight: 700;
+  color: #8a1f1f;
+  opacity: 1;
+}
+
 .hs-row__answer {
   flex: 1;
   min-width: 0;

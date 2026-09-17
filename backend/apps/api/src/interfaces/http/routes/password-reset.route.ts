@@ -23,6 +23,11 @@ export function registerPasswordResetRoutes(
   typed.post(
     '/api/v1/auth/request-password-reset',
     {
+      // Rate-limited: this endpoint sends an email per call. Without a limit
+      // it is both a mail-bombing vector against a victim's inbox and, more
+      // subtly, gives an attacker unlimited attempts to time the response
+      // and try to defeat the anti-enumeration behavior above.
+      config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
       schema: {
         operationId: 'requestPasswordReset',
         tags: ['auth'],
@@ -52,6 +57,11 @@ export function registerPasswordResetRoutes(
   typed.post(
     '/api/v1/auth/reset-password',
     {
+      // Rate-limited: the token is high-entropy (see password-reset.ts), so
+      // this is not really guessable within any reasonable limit — this cap
+      // exists mainly for symmetry with the other three auth endpoints and
+      // as defense in depth.
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
       schema: {
         operationId: 'resetPassword',
         tags: ['auth'],

@@ -10,7 +10,15 @@
   } @else if (challenge(); as c) {
     @if (state() === 'result' && result(); as r) {
       <div class="ce-result-pane">
-        @if (r.isCorrect) {
+        @if (r.compileError) {
+          <div class="ce-result-badge ce-result-badge--fail">✗</div>
+          <h2>Tu código no compiló</h2>
+          <pre class="ce-result-error">{{ r.compileError }}</pre>
+        } @else if (r.runtimeError) {
+          <div class="ce-result-badge ce-result-badge--fail">✗</div>
+          <h2>Tu código falló al ejecutarse</h2>
+          <pre class="ce-result-error">{{ r.runtimeError }}</pre>
+        } @else if (r.isCorrect) {
           <div class="ce-result-badge ce-result-badge--ok">✓</div>
           <h2>¡Correcto!</h2>
           <p class="ce-result-points">+{{ r.pointsEarned }} puntos</p>
@@ -19,6 +27,31 @@
           <h2>No era la respuesta correcta</h2>
           <p class="ce-result-points">Sigue así, vuelve mañana.</p>
         }
+
+        @if (r.testResults; as results) {
+          <div class="ce-test-results">
+            @for (test of results; track $index) {
+              <div class="ce-test-result" [class.ce-test-result--fail]="!test.passed">
+                <div class="ce-test-result__head">
+                  <span class="ce-test-pill" [class.ce-test-pill--fail]="!test.passed">
+                    {{ test.passed ? '✓ Pasó' : '✗ Falló' }}
+                  </span>
+                  <span class="ce-test-result__label">
+                    {{ test.hidden ? 'Test oculto ' + ($index + 1) : 'Test ' + ($index + 1) }}
+                  </span>
+                </div>
+                @if (!test.hidden) {
+                  <div class="ce-test-result__detail">
+                    <span><strong>Entrada:</strong> {{ test.input }}</span>
+                    <span><strong>Esperado:</strong> {{ test.expectedOutput }}</span>
+                    <span><strong>Obtuviste:</strong> {{ test.actualOutput }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
         <p class="ce-result-meta">🔥 Racha actual: {{ r.currentStreak }} días · {{ r.totalPoints }} puntos totales</p>
         <a routerLink="/dashboard" class="ce-result-cta">Ver mi progreso →</a>
       </div>
@@ -27,6 +60,9 @@
         <div class="ce-badges">
           <span class="ce-badge ce-badge--category">{{ c.categoryName }}</span>
           <span class="ce-badge ce-badge--difficulty">{{ c.difficultyName }}</span>
+          @if (c.type === 'code') {
+            <span class="ce-badge ce-badge--language">{{ c.language }}</span>
+          }
         </div>
         <h1>{{ c.title }}</h1>
         <p class="ce-prompt">{{ c.promptMarkdown }}</p>
@@ -38,20 +74,36 @@
             </div>
           }
         </div>
+
+        @if (c.type === 'code' && c.visibleTestCases.length > 0) {
+          <div class="ce-visible-tests">
+            <span class="ce-answer-label">Ejemplos</span>
+            @for (test of c.visibleTestCases; track $index) {
+              <div class="ce-visible-test">
+                <span><strong>Entrada:</strong> {{ test.input }}</span>
+                <span><strong>Salida esperada:</strong> {{ test.expectedOutput }}</span>
+              </div>
+            }
+          </div>
+        }
       </div>
 
       <div class="ce-pane ce-pane--answer">
-        <span class="ce-answer-label">Tu respuesta</span>
+        <span class="ce-answer-label">{{ c.type === 'code' ? 'Tu código' : 'Tu respuesta' }}</span>
 
         @if (errorMessage()) {
           <p class="ce-error">{{ errorMessage() }}</p>
         }
 
         <form [formGroup]="form" (ngSubmit)="onSubmit()" class="ce-form" novalidate>
-          <div class="ce-terminal-input">
-            <span class="ce-prompt-symbol">&gt;</span>
-            <input type="text" formControlName="answer" placeholder="Escribe aquí…" autocomplete="off" />
-          </div>
+          @if (c.type === 'code') {
+            <app-code-editor formControlName="answer" [language]="c.language" />
+          } @else {
+            <div class="ce-terminal-input">
+              <span class="ce-prompt-symbol">&gt;</span>
+              <input type="text" formControlName="answer" placeholder="Escribe aquí…" autocomplete="off" />
+            </div>
+          }
           <button type="submit" class="ce-run-btn" [disabled]="submitting()">
             {{ submitting() ? 'Ejecutando…' : '▶ Ejecutar respuesta' }}
           </button>

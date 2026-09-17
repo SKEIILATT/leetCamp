@@ -12,6 +12,26 @@ const StreakSchema = z.object({
   totalPoints: z.number().int(),
 });
 
+/** A single test case's outcome as the STUDENT sees it — for `hidden: true`,
+ * `input`/`expectedOutput`/`actualOutput` are absent entirely (never sent as
+ * `null` or empty strings), same guarantee as `PublicChallenge`'s
+ * `visibleTestCases`. */
+const TestCaseResultSchema = z.object({
+  passed: z.boolean(),
+  hidden: z.boolean(),
+  input: z.string().optional(),
+  expectedOutput: z.string().optional(),
+  actualOutput: z.string().optional(),
+});
+
+/** Only present for a `type: 'code'` challenge's attempt — see
+ * `SubmitAttemptOutput`/`JudgeDetails` in @leetcamp/domain. */
+const JudgeResultFields = {
+  testResults: z.array(TestCaseResultSchema).optional(),
+  compileError: z.string().optional(),
+  runtimeError: z.string().optional(),
+};
+
 const AttemptSchema = z.object({
   id: z.string(),
   dailyChallengeDate: z.iso.date(),
@@ -21,6 +41,7 @@ const AttemptSchema = z.object({
   submittedAt: z.iso.datetime(),
   timeTakenSeconds: z.number().int(),
   points: z.number().int(),
+  ...JudgeResultFields,
 });
 
 /**
@@ -41,7 +62,10 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
         tags: ['attempts'],
         summary: "Submit an answer to today's challenge",
         security: [{ bearerAuth: [] }],
-        body: z.object({ answer: z.string().trim().min(1).max(2000) }),
+        // 20000, not 2000: this field carries either a short prediction
+        // answer OR a full source-code submission (Fase 2) — the cap exists
+        // to stop an abusive payload, not to constrain a real solution.
+        body: z.object({ answer: z.string().trim().min(1).max(20_000) }),
         response: {
           201: z.object({
             attemptId: z.string(),
@@ -50,6 +74,7 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
             currentStreak: z.number().int(),
             longestStreak: z.number().int(),
             totalPoints: z.number().int(),
+            ...JudgeResultFields,
           }),
           404: ErrorResponseSchema,
           409: ErrorResponseSchema,
@@ -67,7 +92,16 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
           .status(statusForError(result.error) as 404 | 409 | 500)
           .send(errorBody(result.error));
       }
-      return reply.status(201).send(result.value);
+      // `testResults` destructured OUT before spreading `rest` — otherwise
+      // the object literal's inferred type still carries the original
+      // `readonly TestCaseResult[]` from the un-destructured spread, even
+      // though the value is overridden right after. Zod's inferred array
+      // type is mutable, so the domain's readonly array has to become a
+      // plain one to satisfy it.
+      const { testResults, ...rest } = result.value;
+      return reply
+        .status(201)
+        .send({ ...rest, ...(testResults !== undefined ? { testResults: [...testResults] } : {}) });
     },
   );
 
@@ -123,16 +157,24 @@ export function registerAttemptsRoutes(app: FastifyInstance, attemptsUseCases: A
         return reply.status(statusForError(result.error) as 500).send(errorBody(result.error));
       }
       return reply.status(200).send(
-        result.value.map((attempt) => ({
-          id: attempt.id,
-          dailyChallengeDate: attempt.dailyChallengeDate,
-          challengeTitle: attempt.challengeTitle,
-          answer: attempt.answer,
-          isCorrect: attempt.isCorrect,
-          submittedAt: attempt.submittedAt.toISOString(),
-          timeTakenSeconds: attempt.timeTakenSeconds,
-          points: attempt.points,
-        })),
+        result.value.map((attempt) => {
+          // Same reasoning as the submit handler above: destructure
+          // `testResults` out of `judgeDetails` before spreading, so the
+          // readonly array never enters the object literal's inferred type.
+          const { testResults, ...judgeRest } = attempt.judgeDetails ?? {};
+          return {
+            id: attempt.id,
+            dailyChallengeDate: attempt.dailyChallengeDate,
+            challengeTitle: attempt.challengeTitle,
+            answer: attempt.answer,
+            isCorrect: attempt.isCorrect,
+            submittedAt: attempt.submittedAt.toISOString(),
+            timeTakenSeconds: attempt.timeTakenSeconds,
+            points: attempt.points,
+            ...judgeRest,
+            ...(testResults !== undefined ? { testResults: [...testResults] } : {}),
+          };
+        }),
       );
     },
   );

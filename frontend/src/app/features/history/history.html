@@ -44,7 +44,16 @@
             </div>
             <div class="hs-row__bottom">
               <span class="hs-row__date">{{ attempt.dailyChallengeDate | date: 'd MMM y' }}</span>
-              <span class="hs-row__answer">"{{ attempt.answer }}"</span>
+              @if (testSummary(attempt); as summary) {
+                <span class="hs-row__answer">{{ summary }}</span>
+                @if (attempt.compileError) {
+                  <span class="hs-row__answer hs-row__answer--error">no compiló</span>
+                } @else if (attempt.runtimeError) {
+                  <span class="hs-row__answer hs-row__answer--error">error en ejecución</span>
+                }
+              } @else {
+                <span class="hs-row__answer">"{{ attempt.answer }}"</span>
+              }
               <span class="hs-row__meta">{{ formatDuration(attempt.timeTakenSeconds) }}</span>
             </div>
           </div>

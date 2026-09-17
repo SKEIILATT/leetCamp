@@ -1,5 +1,7 @@
 import {
+  challengeNotFound,
   codeChallengeNeedsTestCases,
+  conflict,
   err,
   invalidCategoryReference,
   invalidDifficultyReference,
@@ -10,59 +12,68 @@ import {
   type Clock,
   type CodeLanguage,
   type DifficultyRepository,
-  type IdGenerator,
   type NewTestCase,
   type Result,
 } from '@leetcamp/domain';
 
-export interface CreateChallengeDeps {
+export interface UpdateDraftChallengeDeps {
   readonly challengeRepository: ChallengeRepository;
   readonly categoryRepository: CategoryRepository;
   readonly difficultyRepository: DifficultyRepository;
-  readonly idGenerator: IdGenerator;
   readonly clock: Clock;
 }
 
-interface CreateChallengeInputBase {
+interface UpdateDraftChallengeInputBase {
+  readonly challengeId: string;
   readonly categoryId: string;
   readonly difficultyId: string;
   readonly title: string;
   readonly promptMarkdown: string;
-  /** From `request.identity.userId` — NEVER from the request body. */
-  readonly createdBy: string;
 }
 
-export type CreateChallengeInput =
-  | (CreateChallengeInputBase & {
+export type UpdateDraftChallengeInput =
+  | (UpdateDraftChallengeInputBase & {
       readonly type: 'prediction';
       readonly codeSnippet: string;
       readonly expectedAnswer: string;
     })
-  | (CreateChallengeInputBase & {
+  | (UpdateDraftChallengeInputBase & {
       readonly type: 'code';
       readonly starterCode: string;
       readonly language: CodeLanguage;
       readonly testCases: readonly NewTestCase[];
     });
 
-export interface CreateChallengeOutput {
-  readonly challengeId: string;
-}
-
 const SUPPORTED_LANGUAGES: readonly CodeLanguage[] = ['javascript', 'python', 'sql'];
 
 /**
- * Always creates a `draft`. Publishing is `publishChallenge`, a separate,
- * deliberate action — never a side effect of creation, so an admin can build
- * up a challenge (and see it rendered) before it can reach a student.
+ * Edits a challenge that is still `draft` — a typo in a test case or a
+ * prompt should not require deleting and recreating the whole thing. Once
+ * `published`, a challenge is immutable through this use case: editing test
+ * cases retroactively would change what a challenge means for whoever has
+ * already seen it, the same "one direction only" reasoning `publishChallenge`
+ * already applies to the status transition itself.
+ *
+ * `type` may NOT change on an edit (switching a prediction into a code
+ * challenge or back is a different challenge, not an edit of this one) — the
+ * repository's `create` is the only writer of `type`, this use case never
+ * touches it.
  */
-export function makeCreateChallenge(
-  deps: CreateChallengeDeps,
-): (input: CreateChallengeInput) => Promise<Result<CreateChallengeOutput>> {
+export function makeUpdateDraftChallenge(
+  deps: UpdateDraftChallengeDeps,
+): (input: UpdateDraftChallengeInput) => Promise<Result<void>> {
   return async (input) => {
-    // Checked here, not left to the foreign key: a FK violation reaches the
-    // repository as an opaque database error, and this way the client gets a
-    // VALIDATION naming exactly which id is wrong.
+    const found = await deps.challengeRepository.findById(input.challengeId);
+    if (!found.ok) return err(found.error);
+    if (found.value === null) return err(challengeNotFound(input.challengeId));
+
+    if (found.value.status !== 'draft') {
+      return err(conflict(`Challenge ${input.challengeId} is no longer a draft`));
+    }
+    if (found.value.type !== input.type) {
+      return err(validation(`Cannot change a '${found.value.type}' challenge into a '${input.type}' one`));
+    }
+
     const category = await deps.categoryRepository.findById(input.categoryId);
     if (!category.ok) return err(category.error);
     if (category.value === null) return err(invalidCategoryReference(input.categoryId));
@@ -78,11 +89,10 @@ export function makeCreateChallenge(
       }
     }
 
-    const now = deps.clock.now();
-    const created = await deps.challengeRepository.create(
+    const updated = await deps.challengeRepository.updateDraft(
+      input.challengeId,
       input.type === 'prediction'
         ? {
-            id: deps.idGenerator.generate(),
             type: 'prediction',
             categoryId: input.categoryId,
             difficultyId: input.difficultyId,
@@ -90,12 +100,8 @@ export function makeCreateChallenge(
             promptMarkdown: input.promptMarkdown,
             codeSnippet: input.codeSnippet,
             expectedAnswer: input.expectedAnswer,
-            createdBy: input.createdBy,
-            createdAt: now,
-            updatedAt: now,
           }
         : {
-            id: deps.idGenerator.generate(),
             type: 'code',
             categoryId: input.categoryId,
             difficultyId: input.difficultyId,
@@ -104,13 +110,11 @@ export function makeCreateChallenge(
             starterCode: input.starterCode,
             language: input.language,
             testCases: input.testCases,
-            createdBy: input.createdBy,
-            createdAt: now,
-            updatedAt: now,
           },
+      deps.clock.now(),
     );
-    if (!created.ok) return err(created.error);
+    if (!updated.ok) return err(updated.error);
 
-    return ok({ challengeId: created.value.id });
+    return ok(undefined);
   };
 }

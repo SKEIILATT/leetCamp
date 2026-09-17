@@ -13,6 +13,7 @@ import { makeListCategories } from './list-categories.js';
 import { makeListChallenges } from './list-challenges.js';
 import { makeListDifficulties } from './list-difficulties.js';
 import { makePublishChallenge } from './publish-challenge.js';
+import { makeUpdateDraftChallenge } from './update-draft-challenge.js';
 
 /**
  * The BUNDLE of the `challenges` vertical.
@@ -31,6 +32,9 @@ export interface ChallengesDeps {
   readonly difficultyRepository: DifficultyRepository;
   readonly idGenerator: IdGenerator;
   readonly clock: Clock;
+  /** `false` when `JUDGE0_BASE_URL` is not configured — see
+   * `publishChallenge`'s guard. */
+  readonly codeExecutionEnabled: boolean;
 }
 
 export function buildChallengesUseCases(deps: ChallengesDeps) {
@@ -41,6 +45,7 @@ export function buildChallengesUseCases(deps: ChallengesDeps) {
     listDifficulties: makeListDifficulties(deps),
     createChallenge: makeCreateChallenge(deps),
     publishChallenge: makePublishChallenge(deps),
+    updateDraftChallenge: makeUpdateDraftChallenge(deps),
     listChallenges: makeListChallenges(deps),
   };
 }

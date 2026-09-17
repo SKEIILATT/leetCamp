@@ -44,6 +44,7 @@ function deps(overrides: {
     list: async () => ok([publishedChallenge]),
     create: async () => ok(publishedChallenge),
     updateStatus: async () => ok(publishedChallenge),
+    updateDraft: async () => ok(publishedChallenge),
     ...overrides.challengeRepository,
   };
   return { dailyChallengeRepository, challengeRepository, clock: fixedClock };

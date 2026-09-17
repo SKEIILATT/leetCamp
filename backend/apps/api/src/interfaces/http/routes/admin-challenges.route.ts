@@ -1,17 +1,17 @@
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { ROLE_ID } from '@leetcamp/domain';
+import { ROLE_ID, type Challenge } from '@leetcamp/domain';
 import type { ChallengesUseCases } from '@leetcamp/application';
 
 import { errorBody, ErrorResponseSchema, statusForError } from '../result-to-http.js';
 
 /**
  * The admin surface of the `challenges` vertical: create/list categories and
- * difficulties, create/publish/list challenges. EVERY route here requires
- * `ROLE_ID.ADMIN` — this is where that requirement is actually enforced (the
- * use case bundle itself has no notion of who is calling it, see the note on
- * `buildChallengesUseCases`).
+ * difficulties, create/publish/edit/list challenges. EVERY route here
+ * requires `ROLE_ID.ADMIN` — this is where that requirement is actually
+ * enforced (the use case bundle itself has no notion of who is calling it,
+ * see the note on `buildChallengesUseCases`).
  */
 const adminPreHandler = (app: FastifyInstance) => [app.authenticate, app.requireRole(ROLE_ID.ADMIN)];
 
@@ -28,20 +28,81 @@ const DifficultySchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
-const ChallengeSchema = z.object({
+/** Fase 2: keep in sync with `CodeLanguage` in `@leetcamp/domain` — this is
+ * the HTTP-boundary copy of that closed set (the use case re-validates it
+ * independently, this schema only spares a round trip for an obviously bad
+ * value). */
+const CodeLanguageSchema = z.enum(['javascript', 'python', 'sql']);
+
+const TestCaseSchema = z.object({
+  id: z.string(),
+  input: z.string(),
+  expectedOutput: z.string(),
+  isHidden: z.boolean(),
+});
+
+const NewTestCaseSchema = z.object({
+  input: z.string().min(1),
+  expectedOutput: z.string().min(1),
+  isHidden: z.boolean(),
+});
+
+const ChallengeCommonFields = {
   id: z.string(),
   categoryId: z.string(),
   difficultyId: z.string(),
-  type: z.literal('prediction'),
   title: z.string(),
   promptMarkdown: z.string(),
-  codeSnippet: z.string(),
-  expectedAnswer: z.string(),
   status: z.enum(['draft', 'published']),
   createdBy: z.string(),
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
+};
+
+const PredictionChallengeSchema = z.object({
+  ...ChallengeCommonFields,
+  type: z.literal('prediction'),
+  codeSnippet: z.string(),
+  expectedAnswer: z.string(),
 });
+
+const CodeChallengeSchema = z.object({
+  ...ChallengeCommonFields,
+  type: z.literal('code'),
+  starterCode: z.string(),
+  language: CodeLanguageSchema,
+  testCases: z.array(TestCaseSchema),
+});
+
+const ChallengeSchema = z.discriminatedUnion('type', [PredictionChallengeSchema, CodeChallengeSchema]);
+
+const NewChallengeCommonFields = {
+  categoryId: z.uuid(),
+  difficultyId: z.uuid(),
+  title: z.string().trim().min(1).max(200),
+  promptMarkdown: z.string().trim().min(1),
+};
+
+/** Shared by `POST /admin/challenges` (create) and `PATCH
+ * /admin/challenges/:id` (edit a draft) — an edit sends the exact same shape
+ * a create does, just against an existing id. */
+const ChallengeBodySchema = z.discriminatedUnion('type', [
+  z.object({
+    ...NewChallengeCommonFields,
+    type: z.literal('prediction'),
+    codeSnippet: z.string().min(1),
+    expectedAnswer: z.string().trim().min(1),
+  }),
+  z.object({
+    ...NewChallengeCommonFields,
+    type: z.literal('code'),
+    starterCode: z.string().min(1),
+    language: CodeLanguageSchema,
+    // At least one — a code challenge with zero test cases can never be
+    // judged (the use case re-checks this too, see `createChallenge`).
+    testCases: z.array(NewTestCaseSchema).min(1),
+  }),
+]);
 
 export function registerAdminChallengeRoutes(
   app: FastifyInstance,
@@ -153,16 +214,9 @@ export function registerAdminChallengeRoutes(
       schema: {
         operationId: 'createChallenge',
         tags: ['admin', 'challenges'],
-        summary: 'Create a draft prediction challenge',
+        summary: 'Create a draft challenge (prediction or code)',
         security: [{ bearerAuth: [] }],
-        body: z.object({
-          categoryId: z.uuid(),
-          difficultyId: z.uuid(),
-          title: z.string().trim().min(1).max(200),
-          promptMarkdown: z.string().trim().min(1),
-          codeSnippet: z.string().min(1),
-          expectedAnswer: z.string().trim().min(1),
-        }),
+        body: ChallengeBodySchema,
         response: {
           201: z.object({ challengeId: z.string() }),
           400: ErrorResponseSchema,
@@ -184,6 +238,40 @@ export function registerAdminChallengeRoutes(
     },
   );
 
+  typed.patch(
+    '/api/v1/admin/challenges/:id',
+    {
+      preHandler: adminPreHandler(app),
+      schema: {
+        operationId: 'updateDraftChallenge',
+        tags: ['admin', 'challenges'],
+        summary: 'Edit a challenge that is still a draft',
+        security: [{ bearerAuth: [] }],
+        params: z.object({ id: z.uuid() }),
+        body: ChallengeBodySchema,
+        response: {
+          200: z.object({ challengeId: z.string() }),
+          400: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+          409: ErrorResponseSchema,
+          500: ErrorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const result = await challengesUseCases.updateDraftChallenge({
+        challengeId: request.params.id,
+        ...request.body,
+      });
+      if (!result.ok) {
+        return reply
+          .status(statusForError(result.error) as 400 | 404 | 409 | 500)
+          .send(errorBody(result.error));
+      }
+      return reply.status(200).send({ challengeId: request.params.id });
+    },
+  );
+
   typed.post(
     '/api/v1/admin/challenges/:id/publish',
     {
@@ -196,6 +284,7 @@ export function registerAdminChallengeRoutes(
         params: z.object({ id: z.uuid() }),
         response: {
           200: z.object({ challengeId: z.string(), status: z.literal('published') }),
+          400: ErrorResponseSchema,
           404: ErrorResponseSchema,
           409: ErrorResponseSchema,
           500: ErrorResponseSchema,
@@ -205,8 +294,10 @@ export function registerAdminChallengeRoutes(
     async (request, reply) => {
       const result = await challengesUseCases.publishChallenge({ challengeId: request.params.id });
       if (!result.ok) {
+        // 400 is new in Fase 2: publishing a `type: 'code'` challenge when
+        // Judge0 is not configured — see `codeExecutionNotConfigured`.
         return reply
-          .status(statusForError(result.error) as 404 | 409 | 500)
+          .status(statusForError(result.error) as 400 | 404 | 409 | 500)
           .send(errorBody(result.error));
       }
       return reply.status(200).send({ challengeId: request.params.id, status: 'published' as const });
@@ -256,23 +347,15 @@ function toDifficultyResponse(difficulty: {
   };
 }
 
-function toChallengeResponse(challenge: {
-  id: string;
-  categoryId: string;
-  difficultyId: string;
-  type: 'prediction';
-  title: string;
-  promptMarkdown: string;
-  codeSnippet: string;
-  expectedAnswer: string;
-  status: 'draft' | 'published';
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-}) {
-  return {
-    ...challenge,
-    createdAt: challenge.createdAt.toISOString(),
-    updatedAt: challenge.updatedAt.toISOString(),
-  };
+function toChallengeResponse(challenge: Challenge) {
+  const dates = { createdAt: challenge.createdAt.toISOString(), updatedAt: challenge.updatedAt.toISOString() };
+  if (challenge.type === 'code') {
+    // `testCases` destructured OUT before spreading `rest` — otherwise the
+    // object literal's inferred type still carries the domain's `readonly
+    // TestCase[]`, which Zod's mutable array type rejects, even though the
+    // value is overridden right after.
+    const { testCases, ...rest } = challenge;
+    return { ...rest, ...dates, testCases: [...testCases] };
+  }
+  return { ...challenge, ...dates };
 }

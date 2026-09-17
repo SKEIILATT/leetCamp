@@ -158,12 +158,29 @@ export interface paths {
         /** List challenges, drafts included */
         get: operations["listChallenges"];
         put?: never;
-        /** Create a draft prediction challenge */
+        /** Create a draft challenge (prediction or code) */
         post: operations["createChallenge"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/challenges/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit a challenge that is still a draft */
+        patch: operations["updateDraftChallenge"];
         trace?: never;
     };
     "/api/v1/admin/challenges/{id}/publish": {
@@ -827,16 +844,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
+                    "application/json": ({
                         id: string;
                         categoryId: string;
                         difficultyId: string;
-                        /** @enum {string} */
-                        type: "prediction";
                         title: string;
                         promptMarkdown: string;
-                        codeSnippet: string;
-                        expectedAnswer: string;
                         /** @enum {string} */
                         status: "draft" | "published";
                         createdBy: string;
@@ -844,7 +857,35 @@ export interface operations {
                         createdAt: string;
                         /** Format: date-time */
                         updatedAt: string;
-                    }[];
+                        /** @enum {string} */
+                        type: "prediction";
+                        codeSnippet: string;
+                        expectedAnswer: string;
+                    } | {
+                        id: string;
+                        categoryId: string;
+                        difficultyId: string;
+                        title: string;
+                        promptMarkdown: string;
+                        /** @enum {string} */
+                        status: "draft" | "published";
+                        createdBy: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string;
+                        /** @enum {string} */
+                        type: "code";
+                        starterCode: string;
+                        /** @enum {string} */
+                        language: "javascript" | "python" | "sql";
+                        testCases: {
+                            id: string;
+                            input: string;
+                            expectedOutput: string;
+                            isHidden: boolean;
+                        }[];
+                    })[];
                 };
             };
             /** @description Default Response */
@@ -874,8 +915,27 @@ export interface operations {
                     difficultyId: string;
                     title: string;
                     promptMarkdown: string;
+                    /** @enum {string} */
+                    type: "prediction";
                     codeSnippet: string;
                     expectedAnswer: string;
+                } | {
+                    /** Format: uuid */
+                    categoryId: string;
+                    /** Format: uuid */
+                    difficultyId: string;
+                    title: string;
+                    promptMarkdown: string;
+                    /** @enum {string} */
+                    type: "code";
+                    starterCode: string;
+                    /** @enum {string} */
+                    language: "javascript" | "python" | "sql";
+                    testCases: {
+                        input: string;
+                        expectedOutput: string;
+                        isHidden: boolean;
+                    }[];
                 };
             };
         };
@@ -893,6 +953,98 @@ export interface operations {
             };
             /** @description Default Response */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Default Response */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateDraftChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    categoryId: string;
+                    /** Format: uuid */
+                    difficultyId: string;
+                    title: string;
+                    promptMarkdown: string;
+                    /** @enum {string} */
+                    type: "prediction";
+                    codeSnippet: string;
+                    expectedAnswer: string;
+                } | {
+                    /** Format: uuid */
+                    categoryId: string;
+                    /** Format: uuid */
+                    difficultyId: string;
+                    title: string;
+                    promptMarkdown: string;
+                    /** @enum {string} */
+                    type: "code";
+                    starterCode: string;
+                    /** @enum {string} */
+                    language: "javascript" | "python" | "sql";
+                    testCases: {
+                        input: string;
+                        expectedOutput: string;
+                        isHidden: boolean;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Default Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        challengeId: string;
+                    };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Default Response */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Default Response */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -933,6 +1085,15 @@ export interface operations {
                         /** @enum {string} */
                         status: "published";
                     };
+                };
+            };
+            /** @description Default Response */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description Default Response */
@@ -1093,9 +1254,32 @@ export interface operations {
                         difficultyName: string;
                         title: string;
                         promptMarkdown: string;
-                        codeSnippet: string;
                         /** Format: date-time */
                         publishedAt: string;
+                        /** @enum {string} */
+                        type: "prediction";
+                        codeSnippet: string;
+                    } | {
+                        challengeId: string;
+                        /** Format: date */
+                        date: string;
+                        categoryId: string;
+                        categoryName: string;
+                        difficultyId: string;
+                        difficultyName: string;
+                        title: string;
+                        promptMarkdown: string;
+                        /** Format: date-time */
+                        publishedAt: string;
+                        /** @enum {string} */
+                        type: "code";
+                        starterCode: string;
+                        /** @enum {string} */
+                        language: "javascript" | "python" | "sql";
+                        visibleTestCases: {
+                            input: string;
+                            expectedOutput: string;
+                        }[];
                     };
                 };
             };
@@ -1147,6 +1331,15 @@ export interface operations {
                         currentStreak: number;
                         longestStreak: number;
                         totalPoints: number;
+                        testResults?: {
+                            passed: boolean;
+                            hidden: boolean;
+                            input?: string;
+                            expectedOutput?: string;
+                            actualOutput?: string;
+                        }[];
+                        compileError?: string;
+                        runtimeError?: string;
                     };
                 };
             };
@@ -1239,6 +1432,15 @@ export interface operations {
                         submittedAt: string;
                         timeTakenSeconds: number;
                         points: number;
+                        testResults?: {
+                            passed: boolean;
+                            hidden: boolean;
+                            input?: string;
+                            expectedOutput?: string;
+                            actualOutput?: string;
+                        }[];
+                        compileError?: string;
+                        runtimeError?: string;
                     }[];
                 };
             };

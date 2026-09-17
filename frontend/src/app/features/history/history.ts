@@ -37,6 +37,14 @@ export class History {
     });
   }
 
+  /** `null` for a prediction attempt — `testResults` only exists on a
+   * `type: 'code'` attempt (see `JudgeDetails` in @leetcamp/domain). */
+  protected testSummary(attempt: AttemptHistoryEntry): string | null {
+    if (attempt.testResults === undefined) return null;
+    const passed = attempt.testResults.filter((t) => t.passed).length;
+    return `${passed}/${attempt.testResults.length} test cases`;
+  }
+
   protected formatDuration(seconds: number): string {
     if (seconds < 60) {
       return `${seconds}s`;

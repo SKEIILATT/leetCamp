@@ -15,3 +15,101 @@
   gap: 12px;
   flex-wrap: wrap;
 }
+
+.ad-type-toggle {
+  display: inline-flex;
+  border: 2.5px solid var(--lc-ink);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.ad-type-btn {
+  border: none;
+  background: var(--lc-white);
+  color: var(--lc-ink);
+  font-family: var(--lc-font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 9px 20px;
+  cursor: pointer;
+
+  &--active {
+    background: var(--lc-blue);
+    color: #fff;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.ad-form-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+app-code-editor {
+  display: block;
+  height: 220px;
+}
+
+.ad-testcases {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.ad-testcase {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border: 2px solid var(--lc-ink);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.ad-testcase-row {
+  display: flex;
+  gap: 10px;
+  flex: 1 1 320px;
+  min-width: 240px;
+
+  input {
+    flex: 1;
+    border: 2px solid var(--lc-ink);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: var(--lc-font-mono);
+    font-size: 0.85rem;
+    color: var(--lc-ink);
+  }
+}
+
+.ad-testcase-hidden {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--lc-ink);
+  white-space: nowrap;
+}
+
+.ad-testcase-remove {
+  background: transparent;
+  border: 2px solid var(--lc-ink);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lc-ink);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

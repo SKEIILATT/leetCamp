@@ -31,7 +31,11 @@ import {
   createPrismaUserAuthorizationRepository,
   createPrismaUserRepository,
 } from './infrastructure/persistence/index.js';
-import { createPredictionValidationEngine } from './infrastructure/validation/index.js';
+import {
+  createCompositeValidationEngine,
+  createJudge0ValidationEngine,
+  createPredictionValidationEngine,
+} from './infrastructure/validation/index.js';
 import {
   createInProcessScheduler,
   registerSchedulerJobs,
@@ -131,12 +135,30 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
   const difficultyRepository = createPrismaDifficultyRepository(prisma, log);
   const categoryRepository = createPrismaCategoryRepository(prisma, log);
 
+  // ── Judge0 (Fase 2, optional) ──────────────────────────────────────────────
+  //
+  // `null` when `JUDGE0_BASE_URL` is unset — code execution is an optional
+  // capability, not a requirement to boot (see the env var's own comment).
+  // `codeExecutionEnabled` is threaded into `publishChallenge` so an admin
+  // gets a clear error at PUBLISH time instead of every student's submission
+  // failing the day the challenge goes live.
+  const codeExecutionEnabled = env.JUDGE0_BASE_URL !== undefined;
+  const judge0ValidationEngine = env.JUDGE0_BASE_URL
+    ? createJudge0ValidationEngine({
+        baseUrl: env.JUDGE0_BASE_URL,
+        apiKey: env.JUDGE0_API_KEY,
+        timeoutMs: env.JUDGE0_TIMEOUT_MS,
+        shutdownSignal: shutdown.signal,
+      })
+    : null;
+
   const challengesUseCases = buildChallengesUseCases({
     challengeRepository,
     categoryRepository,
     difficultyRepository,
     idGenerator,
     clock: createSystemClock(),
+    codeExecutionEnabled,
   });
 
   const dailyChallengeRepository = createPrismaDailyChallengeRepository(prisma, log);
@@ -163,7 +185,10 @@ export async function composeApp(env: Env): Promise<FastifyInstance> {
     challengeRepository,
     difficultyRepository,
     userRepository: userRepositoryForAuth,
-    validationEngine: createPredictionValidationEngine(),
+    validationEngine: createCompositeValidationEngine({
+      prediction: createPredictionValidationEngine(),
+      code: judge0ValidationEngine,
+    }),
     idGenerator,
     clock: createSystemClock('UTC'),
   });

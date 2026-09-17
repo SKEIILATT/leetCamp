@@ -114,18 +114,26 @@ model Difficulty {
   @@map("difficulties")
 }
 
-/// Fase 1 only has the prediction/analysis type — flattened onto this model
-/// rather than split into a separate `PredictionChallenge` table for a `type`
-/// that cannot yet be anything else. See the domain entity's header comment.
+/// Fase 2: two types now exist (`prediction`, `code`), so the fields specific
+/// to `prediction` are nullable here (only set when `type = 'prediction'`)
+/// and `code`-only data lives in the separate `CodeChallenge`/`TestCase`
+/// tables below — a real split, per the domain entity's header comment, now
+/// that `type` genuinely varies instead of being a placeholder for one.
 model Challenge {
   id           String @id @default(uuid()) @db.Uuid
   categoryId   String @map("category_id") @db.Uuid
   difficultyId String @map("difficulty_id") @db.Uuid
 
+  /// `prediction` | `code` — domain-validated, not a DB enum/CHECK, same
+  /// convention as `status` below.
+  type String @default("prediction")
+
   title          String
-  promptMarkdown String @map("prompt_markdown")
-  codeSnippet    String @map("code_snippet")
-  expectedAnswer String @map("expected_answer")
+  promptMarkdown String  @map("prompt_markdown")
+  /// Prediction-only — `null` when `type = 'code'`.
+  codeSnippet    String? @map("code_snippet")
+  /// Prediction-only — `null` when `type = 'code'`.
+  expectedAnswer String? @map("expected_answer")
 
   /// `draft` | `published` — domain-validated, not a DB enum/CHECK, same
   /// convention as `User.status`: adding a status is a code change reviewed
@@ -142,9 +150,51 @@ model Challenge {
   creator    User       @relation(fields: [createdBy], references: [id])
 
   dailyChallenges DailyChallenge[]
+  codeChallenge   CodeChallenge?
 
   @@index([status])
+  @@index([type])
   @@map("challenges")
+}
+
+/// Code-only data for a `Challenge` with `type = 'code'` — 1:1 via
+/// `challengeId`. Judged by Judge0 (self-hosted, see
+/// `judge0-validation-engine.ts`); `language` picks the Judge0 language id in
+/// that adapter, never stored here as a raw Judge0 id so a Judge0 version
+/// upgrade that renumbers languages costs an adapter constant, not a migration.
+model CodeChallenge {
+  challengeId String @id @map("challenge_id") @db.Uuid
+
+  starterCode String @map("starter_code")
+  /// One of `CodeLanguage` in @leetcamp/domain — domain-validated, not a DB
+  /// enum, same reasoning as `Challenge.type`.
+  language    String
+
+  challenge Challenge  @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  testCases TestCase[]
+
+  @@map("code_challenges")
+}
+
+/// One input/expected-output pair a `CodeChallenge` is judged against.
+/// `isHidden` test cases are used for judging but their `input`/
+/// `expectedOutput` must never reach the student — enforced at the
+/// `PublicChallenge`/route-schema boundary, never by relying on this table
+/// alone.
+model TestCase {
+  id              String  @id @default(uuid()) @db.Uuid
+  codeChallengeId String  @map("code_challenge_id") @db.Uuid
+  input           String
+  expectedOutput  String  @map("expected_output")
+  isHidden        Boolean @map("is_hidden")
+  /// Display/execution order — test cases are shown and judged in this
+  /// sequence, not insertion order (which Postgres does not guarantee).
+  order           Int
+
+  codeChallenge CodeChallenge @relation(fields: [codeChallengeId], references: [challengeId], onDelete: Cascade)
+
+  @@index([codeChallengeId])
+  @@map("test_cases")
 }
 
 /// The single global reto del día. `date` is a pure calendar date (no
@@ -191,6 +241,13 @@ model Attempt {
   /// application always supplies a real, computed value; nothing relies on
   /// the default going forward.
   points           Int      @default(0)
+
+  /// Per-test-case breakdown for a `type = 'code'` attempt (pass/fail, and
+  /// input/expected/actual for the non-hidden cases only) plus
+  /// `compileError`/`runtimeError` if the submission never ran. `null` for
+  /// prediction attempts. Frozen at submission time — same reasoning as
+  /// `points`: never re-judged when the history is read back later.
+  judgeDetails Json? @map("judge_details")
 
   createdAt DateTime @default(now()) @map("created_at")
 

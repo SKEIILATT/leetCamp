@@ -10,3 +10,9 @@ export const invalidCategoryReference = (categoryId: string) =>
 
 export const invalidDifficultyReference = (difficultyId: string) =>
   validation(`Difficulty ${difficultyId} does not exist`);
+
+export const codeChallengeNeedsTestCases = () =>
+  validation('A code challenge needs at least one test case');
+
+export const codeExecutionNotConfigured = () =>
+  validation('Code execution is not configured on this server — cannot publish a code challenge');

@@ -43,17 +43,21 @@ symptom is a build that fails validation for no apparent reason.
 | `AUTH_AUDIENCE` | **yes** | — | `aud` claim, same reasoning |
 | `JWT_SECRET` | **yes** | — | HMAC secret (32+ chars) used to sign AND verify tokens |
 | `JWT_TTL_SECONDS` | no | `86400` | How long an issued token stays valid |
+| `FRONTEND_BASE_URL` | no | `http://localhost:4200` | Origin the password-reset link points at (the Angular app, not this API). No trailing slash |
+| `PASSWORD_RESET_TOKEN_TTL_MINUTES` | no | `30` | How long a "forgot password" link stays valid |
 | `SCHEDULER_ENABLED` | no | `false` | ⚠ Only `true` on ONE instance |
 | `SCHEDULER_BOOT_DELAY_MS` | no | `10000` | Delay before the first job after startup |
 | `SCHEDULER_HEARTBEAT_MINUTES` | no | `15` | Cadence of the reference job |
 
-### `apps/web/.env` — public
+### Frontend — no `.env` at all
 
-| Variable | Req. | Default | What it is |
-|---|:---:|---|---|
-| `VITE_API_BASE_URL` | no | `/api` | Where the API lives as seen from the browser |
-| `VITE_AUTH_CLIENT_ID` | **yes** | — | **Public** identifier of the auth provider |
-| `VITE_AUTH_ISSUER` | **yes** | — | Issuer URL |
+`frontend/` is a standalone Angular project (NOT the old `apps/web` Vite
+scaffold this section used to document — see docs/DECISIONS.md, "Frontend:
+proyecto Angular independiente"). It has no runtime environment variables:
+its `apiBaseUrl` is baked in at BUILD time via Angular's file-replacement
+(`src/environments/environment.ts` vs `environment.development.ts`), and in
+production it is the relative path `/api/v1` — same-origin behind Caddy, so
+there is nothing to configure per deployment.
 
 ### `deploy/.env` — deployment
 
@@ -62,7 +66,6 @@ symptom is a build that fails validation for no apparent reason.
 | `SITE_ADDRESS` | `:80` locally; the real domain in production (triggers ACME) |
 | `WEB_IMAGE` / `API_IMAGE` | Image references. **Pinned by SHA**, never `latest` |
 | *(plus those in `apps/api/.env`)* | It is the `api` service's `env_file` |
-| *(plus the `VITE_*` ones)* | Feed the frontend's build-args |
 
 ---
 

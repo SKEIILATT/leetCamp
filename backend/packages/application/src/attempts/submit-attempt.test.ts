@@ -97,6 +97,7 @@ function deps(overrides: {
     list: async () => ok([challenge]),
     create: async () => ok(challenge),
     updateStatus: async () => ok(challenge),
+    updateDraft: async () => ok(challenge),
     ...overrides.challengeRepository,
   };
   const difficultyRepository: DifficultyRepository = {
@@ -116,7 +117,7 @@ function deps(overrides: {
     ...overrides.userRepository,
   };
   const validationEngine: ValidationEngine = {
-    validate: async (_c, answer) => ok({ isCorrect: answer === challenge.expectedAnswer }),
+    validate: async (_c, answer) => ok({ isCorrect: answer === '42' }),
     ...overrides.validationEngine,
   };
 
@@ -310,6 +311,43 @@ describe('submitAttempt', () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('unreachable');
     expect(result.error.code).toBe('REPOSITORY');
+  });
+
+  it('propagates testResults from the validation engine into the output and the persisted attempt', async () => {
+    let persistedJudgeDetails: unknown;
+
+    const submitAttempt = makeSubmitAttempt(
+      deps({
+        validationEngine: {
+          validate: async () =>
+            ok({
+              isCorrect: false,
+              testResults: [
+                { passed: true, hidden: false, input: '1', expectedOutput: '1', actualOutput: '1' },
+                { passed: false, hidden: true },
+              ],
+            }),
+        },
+        attemptRepository: {
+          create: async (a) => {
+            persistedJudgeDetails = a.judgeDetails;
+            return ok({ ...a });
+          },
+        },
+      }),
+    );
+
+    const result = await submitAttempt({ userId: student.id, answer: 'function solve() {}' });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('unreachable');
+    expect(result.value.testResults).toHaveLength(2);
+    expect(persistedJudgeDetails).toEqual({
+      testResults: [
+        { passed: true, hidden: false, input: '1', expectedOutput: '1', actualOutput: '1' },
+        { passed: false, hidden: true },
+      ],
+    });
   });
 
   it('propagates a failure from the attempt transaction as-is, without a partial success', async () => {

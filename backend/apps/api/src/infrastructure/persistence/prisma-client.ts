@@ -49,7 +49,7 @@ export function createPrismaClient(options: PrismaClientOptions): PrismaClient {
  * Re-export of the client TYPE so repositories can be typed without importing
  * the generated directory. See the boundary note at the top of the file.
  */
-export type { PrismaClient };
+export type { PrismaClient, Prisma };
 
 /**
  * The type of the `tx` handed to `prisma.$transaction(async (tx) => ...)`.

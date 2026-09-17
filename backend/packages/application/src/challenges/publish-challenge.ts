@@ -1,6 +1,7 @@
 import {
   challengeAlreadyPublished,
   challengeNotFound,
+  codeExecutionNotConfigured,
   err,
   ok,
   type ChallengeRepository,
@@ -11,6 +12,10 @@ import {
 export interface PublishChallengeDeps {
   readonly challengeRepository: ChallengeRepository;
   readonly clock: Clock;
+  /** `false` when `JUDGE0_BASE_URL` is not configured — see the guard below.
+   * Checked at PUBLISH time, not at answer time, so an admin finds out a
+   * code challenge cannot run before an entire cohort tries it. */
+  readonly codeExecutionEnabled: boolean;
 }
 
 export interface PublishChallengeInput {
@@ -29,6 +34,10 @@ export function makePublishChallenge(
     // on `ChallengeRepository.updateStatus`.
     if (found.value.status === 'published') {
       return err(challengeAlreadyPublished(input.challengeId));
+    }
+
+    if (found.value.type === 'code' && !deps.codeExecutionEnabled) {
+      return err(codeExecutionNotConfigured());
     }
 
     const updated = await deps.challengeRepository.updateStatus(

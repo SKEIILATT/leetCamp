@@ -4,12 +4,13 @@ import {
   repository,
   type Attempt,
   type AttemptRepository,
+  type JudgeDetails,
   type NewAttempt,
   type Result,
 } from '@leetcamp/domain';
 
 import { fromDateColumn, toDateColumn } from './calendar-date-column.js';
-import type { PrismaClient, PrismaTransactionClient } from './prisma-client.js';
+import type { Prisma, PrismaClient, PrismaTransactionClient } from './prisma-client.js';
 
 function toDomain(row: {
   id: string;
@@ -20,6 +21,7 @@ function toDomain(row: {
   submittedAt: Date;
   timeTakenSeconds: number;
   points: number;
+  judgeDetails: Prisma.JsonValue | null;
 }): Attempt {
   return {
     id: row.id,
@@ -30,6 +32,9 @@ function toDomain(row: {
     submittedAt: row.submittedAt,
     timeTakenSeconds: row.timeTakenSeconds,
     points: row.points,
+    // Cast, not re-validated: only ever written by this repository's own
+    // `create`, from a `JudgeDetails` value — never edited by hand in the DB.
+    ...(row.judgeDetails !== null ? { judgeDetails: row.judgeDetails as unknown as JudgeDetails } : {}),
   };
 }
 
@@ -80,6 +85,14 @@ export function createPrismaAttemptRepository(
             submittedAt: attempt.submittedAt,
             timeTakenSeconds: attempt.timeTakenSeconds,
             points: attempt.points,
+            // Conditional spread, not `judgeDetails: attempt.judgeDetails ?? null`:
+            // under `exactOptionalPropertyTypes`, Prisma's optional `data`
+            // fields accept the key being ABSENT, not present with
+            // `undefined`. `undefined` here (prediction attempts) means
+            // "omit the key", leaving the column at its `null` default.
+            ...(attempt.judgeDetails !== undefined
+              ? { judgeDetails: attempt.judgeDetails as unknown as Prisma.InputJsonValue }
+              : {}),
           },
         });
         return ok(toDomain(row));

@@ -207,6 +207,33 @@ export const env = createEnv({
 
     /** Cadence of the reference heartbeat job, in MINUTES. */
     SCHEDULER_HEARTBEAT_MINUTES: z.coerce.number().int().positive().default(15),
+
+    // ── Judge0 (Fase 2: `type: 'code'` challenges) ───────────────────────────
+    /**
+     * OPTIONAL, no default — unlike most external dependencies in this file,
+     * a missing value does NOT fail boot. Code execution is an optional
+     * capability layered on top of an already-complete product (Fase 1
+     * ships and works with zero code challenges ever created); an admin who
+     * never authors one should not be blocked from running the server by an
+     * unrelated env var. `composition-root.ts` wires the code-execution
+     * adapter only when this is set — see `createCompositeValidationEngine`.
+     *
+     * Self-hosted, same server as the API, another port — e.g.
+     * `http://localhost:2358`. No trailing slash.
+     */
+    JUDGE0_BASE_URL: z
+      .url()
+      .optional()
+      .transform((value) => value?.replace(/\/+$/, '')),
+
+    /** OPTIONAL. Judge0's `X-Auth-Token` header — empty means the instance
+     * has no authentication configured (true today, per docs/DECISIONS.md). */
+    JUDGE0_API_KEY: z.string().default(''),
+
+    /** Timeout for a SINGLE test-case round trip to Judge0, in
+     * MILLISECONDS — not the whole submission (which runs test cases
+     * sequentially, see `judge0-validation-engine.ts`). */
+    JUDGE0_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   },
   runtimeEnv: process.env,
   // `CORS_ORIGINS=` (empty) must read as ABSENT and fail the boot, not as a

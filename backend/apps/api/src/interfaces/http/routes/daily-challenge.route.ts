@@ -14,7 +14,7 @@ const DailyChallengeSchema = z.object({
   publishedAt: z.iso.datetime(),
 });
 
-const PublicChallengeSchema = z.object({
+const PublicChallengeCommonFields = {
   challengeId: z.string(),
   date: z.iso.date(),
   categoryId: z.string(),
@@ -23,14 +23,27 @@ const PublicChallengeSchema = z.object({
   difficultyName: z.string(),
   title: z.string(),
   promptMarkdown: z.string(),
-  codeSnippet: z.string(),
   publishedAt: z.iso.datetime(),
-  // ⚠ NO `expectedAnswer` FIELD. See `PublicChallenge` in @leetcamp/application
-  // for why the answer cannot even reach this schema — this is not the only
-  // thing keeping it out, but it is the last line of defence: even if a
-  // future edit accidentally attached it to the use case's return value,
-  // Zod's response serialisation strips whatever is not declared here.
-});
+};
+
+/**
+ * ⚠ NO `expectedAnswer` FIELD, and no HIDDEN test case content, ON PURPOSE.
+ * See `PublicChallenge` in @leetcamp/application for why neither can even
+ * reach this schema — this is not the only thing keeping them out, but it is
+ * the last line of defence: even if a future edit accidentally attached one
+ * to the use case's return value, Zod's response serialisation strips
+ * whatever is not declared here.
+ */
+const PublicChallengeSchema = z.discriminatedUnion('type', [
+  z.object({ ...PublicChallengeCommonFields, type: z.literal('prediction'), codeSnippet: z.string() }),
+  z.object({
+    ...PublicChallengeCommonFields,
+    type: z.literal('code'),
+    starterCode: z.string(),
+    language: z.enum(['javascript', 'python', 'sql']),
+    visibleTestCases: z.array(z.object({ input: z.string(), expectedOutput: z.string() })),
+  }),
+]);
 
 export function registerDailyChallengeRoutes(
   app: FastifyInstance,
@@ -117,10 +130,19 @@ export function registerDailyChallengeRoutes(
       if (!result.ok) {
         return reply.status(statusForError(result.error) as 404 | 500).send(errorBody(result.error));
       }
-      return reply.status(200).send({
-        ...result.value,
-        publishedAt: result.value.publishedAt.toISOString(),
-      });
+      if (result.value.type === 'code') {
+        // `visibleTestCases` destructured OUT before spreading `rest` — same
+        // reasoning as `toChallengeResponse` in admin-challenges.route.ts.
+        const { visibleTestCases, ...rest } = result.value;
+        return reply.status(200).send({
+          ...rest,
+          publishedAt: result.value.publishedAt.toISOString(),
+          visibleTestCases: [...visibleTestCases],
+        });
+      }
+      return reply
+        .status(200)
+        .send({ ...result.value, publishedAt: result.value.publishedAt.toISOString() });
     },
   );
 }

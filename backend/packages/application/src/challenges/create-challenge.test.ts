@@ -24,12 +24,25 @@ const difficulty: Difficulty = {
 };
 
 const baseInput = {
+  type: 'prediction' as const,
   categoryId: category.id,
   difficultyId: difficulty.id,
   title: 'What does this query return?',
   promptMarkdown: 'Given the table...',
   codeSnippet: 'SELECT 1;',
   expectedAnswer: '1',
+  createdBy: 'admin-1',
+};
+
+const baseCodeInput = {
+  type: 'code' as const,
+  categoryId: category.id,
+  difficultyId: difficulty.id,
+  title: 'Reverse a string',
+  promptMarkdown: 'Write a function that reverses a string.',
+  starterCode: 'function reverse(s) {}',
+  language: 'javascript' as const,
+  testCases: [{ input: 'abc', expectedOutput: 'cba', isHidden: false }],
   createdBy: 'admin-1',
 };
 
@@ -55,9 +68,21 @@ function deps(overrides: {
   const challengeRepository: ChallengeRepository = {
     findById: async () => ok(null),
     list: async () => ok([]),
-    create: async (c) => ok({ ...c, type: 'prediction', status: 'draft' }),
+    // `status: 'draft'` first, `...c` second — so `c.type` (which the caller
+    // sets) is never clobbered back to a hardcoded 'prediction'. Test cases
+    // get a synthetic id here (the real repository lets Postgres generate
+    // it) so the fake's return value satisfies `TestCase`, not `NewTestCase`.
+    create: async (c) =>
+      ok(
+        c.type === 'code'
+          ? { status: 'draft', ...c, testCases: c.testCases.map((tc, i) => ({ id: `tc-${i}`, ...tc })) }
+          : { status: 'draft', ...c },
+      ),
     updateStatus: async () => {
       throw new Error('createChallenge must never update status');
+    },
+    updateDraft: async () => {
+      throw new Error('createChallenge must never update a draft');
     },
     ...overrides.challengeRepository,
   };
@@ -98,7 +123,11 @@ describe('createChallenge', () => {
         challengeRepository: {
           create: async (c) => {
             created = true;
-            return ok({ ...c, type: 'prediction', status: 'draft' });
+            return ok(
+              c.type === 'code'
+                ? { status: 'draft', ...c, testCases: c.testCases.map((tc, i) => ({ id: `tc-${i}`, ...tc })) }
+                : { status: 'draft', ...c },
+            );
           },
         },
       }),
@@ -135,5 +164,38 @@ describe('createChallenge', () => {
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('unreachable');
     expect(result.error.code).toBe('REPOSITORY');
+  });
+
+  it('creates a draft code challenge with its test cases', async () => {
+    const createChallenge = makeCreateChallenge(deps());
+
+    const result = await createChallenge(baseCodeInput);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error('unreachable');
+    expect(result.value.challengeId).toBe('challenge-1');
+  });
+
+  it('rejects a code challenge with zero test cases', async () => {
+    const createChallenge = makeCreateChallenge(deps());
+
+    const result = await createChallenge({ ...baseCodeInput, testCases: [] });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.error.code).toBe('VALIDATION');
+  });
+
+  it('rejects a code challenge in an unsupported language', async () => {
+    const createChallenge = makeCreateChallenge(deps());
+
+    // @ts-expect-error — deliberately an unsupported value, to exercise the
+    // runtime guard behind the type system (the HTTP schema also rejects
+    // this before it ever reaches here, but the use case does not trust it).
+    const result = await createChallenge({ ...baseCodeInput, language: 'rust' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error('unreachable');
+    expect(result.error.code).toBe('VALIDATION');
   });
 });

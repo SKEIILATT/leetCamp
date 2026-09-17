@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { StreakService } from '../../core/streak.service';
 import { TodayChallengeService } from '../../core/today-challenge.service';
 import type { paths } from '../../generated/api.d.ts';
+import { CodeEditor } from '../code-editor/code-editor';
 import { ScreenFrame } from '../screen-frame/screen-frame';
 
 type TodayChallenge = paths['/api/v1/daily-challenge']['get']['responses'][200]['content']['application/json'];
@@ -15,7 +16,7 @@ type ViewState = 'loading' | 'no-challenge' | 'ready' | 'result';
 
 @Component({
   selector: 'app-daily-challenge',
-  imports: [ReactiveFormsModule, RouterLink, ScreenFrame],
+  imports: [ReactiveFormsModule, RouterLink, ScreenFrame, CodeEditor],
   templateUrl: './daily-challenge.html',
   styleUrl: './daily-challenge.scss',
 })
@@ -30,16 +31,28 @@ export class DailyChallenge {
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
 
-  protected readonly codeLines = computed(() => (this.challenge()?.codeSnippet ?? '').split('\n'));
+  /** The read-only reference snippet shown in the problem pane — the
+   * prediction's `codeSnippet`, or the code challenge's `starterCode`. Both
+   * are rendered the same fake line-numbered way. */
+  protected readonly codeLines = computed(() => {
+    const c = this.challenge();
+    if (c === null) return [];
+    return (c.type === 'code' ? c.starterCode : c.codeSnippet).split('\n');
+  });
 
   protected readonly form = this.fb.nonNullable.group({
-    answer: ['', [Validators.required, Validators.maxLength(2000)]],
+    answer: ['', [Validators.required, Validators.maxLength(20_000)]],
   });
 
   constructor() {
     this.challengeService.getToday().subscribe({
       next: (challenge) => {
         this.challenge.set(challenge);
+        // Pre-fill with the starter code so the student edits it in place —
+        // a prediction challenge has no equivalent, its field starts empty.
+        if (challenge.type === 'code') {
+          this.form.patchValue({ answer: challenge.starterCode });
+        }
         this.state.set('ready');
       },
       error: (err: HttpErrorResponse) => {

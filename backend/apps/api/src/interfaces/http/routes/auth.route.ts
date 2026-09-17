@@ -45,6 +45,11 @@ export function registerAuthRoutes(app: FastifyInstance, authUseCases: AuthUseCa
   app.withTypeProvider<ZodTypeProvider>().post(
     '/api/v1/auth/register',
     {
+      // Rate-limited: an unauthenticated endpoint that writes to the DB and
+      // sends no confirmation email is a spam-account vector without it.
+      // Registered global-`rateLimit` plugin is `global: false` — routes must
+      // opt in explicitly, see app.ts.
+      config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
       schema: {
         operationId: 'registerUser',
         tags: ['auth'],
@@ -75,6 +80,10 @@ export function registerAuthRoutes(app: FastifyInstance, authUseCases: AuthUseCa
   app.withTypeProvider<ZodTypeProvider>().post(
     '/api/v1/auth/login',
     {
+      // Rate-limited: this is the credential-brute-force target. `max: 10`
+      // per IP/minute is generous enough for a real user mistyping a
+      // password, tight enough to make guessing a password impractical.
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
       schema: {
         operationId: 'loginUser',
         tags: ['auth'],

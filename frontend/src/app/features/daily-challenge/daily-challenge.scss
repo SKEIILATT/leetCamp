@@ -51,6 +51,11 @@
     background: var(--lc-sky);
     color: var(--lc-ink);
   }
+
+  &--language {
+    background: var(--lc-violet);
+    color: #fff;
+  }
 }
 
 .ce-pane--problem {
@@ -101,6 +106,25 @@
     color: var(--lc-mint);
     white-space: pre;
   }
+}
+
+.ce-visible-tests {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ce-visible-test {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--lc-font-mono);
+  font-size: 0.85rem;
+  color: var(--lc-ink);
+  background: var(--lc-white);
+  border: 2px solid var(--lc-ink);
+  border-radius: 8px;
+  padding: 10px 12px;
 }
 
 .ce-pane--answer {
@@ -161,6 +185,11 @@
     color: var(--lc-ink);
     background: transparent;
   }
+}
+
+app-code-editor {
+  display: block;
+  height: 320px;
 }
 
 .ce-run-btn {
@@ -248,6 +277,78 @@
   font-size: 0.85rem;
   color: var(--lc-ink);
   opacity: 0.75;
+}
+
+.ce-result-error {
+  margin: 0;
+  max-width: 60ch;
+  text-align: left;
+  white-space: pre-wrap;
+  font-family: var(--lc-font-mono);
+  font-size: 0.85rem;
+  padding: 12px 14px;
+  border: 2px solid #8a1f1f;
+  border-radius: 8px;
+  background: #ffe8e8;
+  color: #8a1f1f;
+}
+
+.ce-test-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 60ch;
+  text-align: left;
+}
+
+.ce-test-result {
+  border: 3px solid var(--lc-ink);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #e4f8ed;
+
+  &--fail {
+    background: #ffe8e8;
+  }
+}
+
+.ce-test-result__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ce-test-pill {
+  font-family: var(--lc-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #1d8a57;
+  color: #fff;
+
+  &--fail {
+    background: #8a1f1f;
+  }
+}
+
+.ce-test-result__label {
+  font-family: var(--lc-font-mono);
+  font-size: 0.85rem;
+  color: var(--lc-ink);
+  font-weight: 700;
+}
+
+.ce-test-result__detail {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--lc-font-mono);
+  font-size: 0.8rem;
+  color: var(--lc-ink);
 }
 
 .ce-result-cta {
